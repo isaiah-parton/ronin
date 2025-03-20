@@ -1,6 +1,5 @@
 package ronin
 
-import kn "local:katana"
 import "base:runtime"
 import "core:container/small_array"
 import "core:fmt"
@@ -14,6 +13,7 @@ import "core:slice"
 import "core:strings"
 import "core:sys/windows"
 import "core:time"
+import kn "local:katana"
 import "tedit"
 import "vendor:fontstash"
 import "vendor:glfw"
@@ -92,7 +92,7 @@ Global_State :: struct {
 	frames_so_far:            int,
 	frames_this_second:       int,
 	id_stack:                 Stack(Id, MAX_IDS),
-	objects:                  [dynamic]Object,
+	objects:                  [dynamic]^Object,
 	object_map:               map[Id]^Object,
 	object_stack:             Stack(^Object, 128),
 	object_index:             int,
@@ -122,8 +122,8 @@ Global_State :: struct {
 	next_id:                  Maybe(Id),
 	group_stack:              Stack(Group, 32),
 	focus_next:               bool,
-	layer_array:              [dynamic]Layer,
-	layer_map:                map[Id]Layer,
+	layer_array:              [dynamic]^Layer,
+	layer_map:                map[Id]^Layer,
 	layer_stack:              Stack(^Layer, MAX_LAYERS),
 	last_layer_counts:        [Layer_Sort_Method]int,
 	layer_counts:             [Layer_Sort_Method]int,
@@ -157,7 +157,7 @@ Global_State :: struct {
 	frames:                   int,
 	drawn_frames:             int,
 	cursors:                  [Mouse_Cursor]glfw.CursorHandle,
-	text_content_builder: Text_Content_Builder,
+	text_content_builder:     Text_Content_Builder,
 }
 
 seconds :: proc() -> f64 {
@@ -338,13 +338,16 @@ start :: proc(window: glfw.WindowHandle, style: Maybe(Style) = nil) -> bool {
 	on_device :: proc "c" (
 		status: wgpu.RequestDeviceStatus,
 		device: wgpu.Device,
-		message: cstring,
-		userdata: rawptr,
+		message: string,
+		userdata1: rawptr,
+		userdata2: rawptr,
 	) {
 		context = runtime.default_context()
 		switch status {
+		case .InstanceDropped:
+			panic("WGPU instance dropped!")
 		case .Success:
-			(^Global_State)(userdata).device = device
+			(^Global_State)(userdata1).device = device
 		case .Error:
 			fmt.panicf("Unable to aquire device: %s", message)
 		case .Unknown:
@@ -355,18 +358,25 @@ start :: proc(window: glfw.WindowHandle, style: Maybe(Style) = nil) -> bool {
 	on_adapter :: proc "c" (
 		status: wgpu.RequestAdapterStatus,
 		adapter: wgpu.Adapter,
-		message: cstring,
-		userdata: rawptr,
+		message: string,
+		userdata1: rawptr,
+		userdata2: rawptr,
 	) {
 		context = runtime.default_context()
 		switch status {
+		case .InstanceDropped:
+			panic("WGPU instance dropped!")
 		case .Success:
-			(^Global_State)(userdata).adapter = adapter
-			info := wgpu.AdapterGetInfo(adapter)
-			fmt.printfln("Using %v on %v", info.backendType, info.description)
-
+			(^Global_State)(userdata1).adapter = adapter
+			if info, status := wgpu.AdapterGetInfo(adapter); status == .Success {
+				fmt.printfln("Using %v on %v", info.backendType, info.description)
+			}
 			descriptor := kn.device_descriptor()
-			wgpu.AdapterRequestDevice(adapter, &descriptor, on_device, userdata)
+			wgpu.AdapterRequestDevice(
+				adapter,
+				&descriptor,
+				{callback = on_device, userdata1 = userdata1},
+			)
 		case .Error:
 			fmt.panicf("Unable to acquire adapter: %s", message)
 		case .Unavailable:
@@ -379,10 +389,9 @@ start :: proc(window: glfw.WindowHandle, style: Maybe(Style) = nil) -> bool {
 	wgpu.InstanceRequestAdapter(
 		global_state.instance,
 		&{powerPreference = .LowPower},
-		on_adapter,
-		&global_state,
+		{callback = on_adapter, userdata1 = &global_state},
 	)
-	global_state.surface_config = kn.surface_configuration(
+	global_state.surface_config, _ = kn.surface_configuration(
 		global_state.device,
 		global_state.adapter,
 		global_state.surface,
@@ -593,7 +602,7 @@ shutdown :: proc() {
 	}
 
 	for &object in global_state.objects {
-		destroy_object(&object)
+		destroy_object(object)
 	}
 	delete(global_state.objects)
 	delete(global_state.object_map)
@@ -665,3 +674,4 @@ draw_shadow :: proc(box: kn.Box) {
 		)
 	}
 }
+

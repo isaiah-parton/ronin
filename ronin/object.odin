@@ -77,6 +77,7 @@ Object :: struct {
 	box:           Box,
 	cut_size:      [2]f32,
 	size:          [2]f32,
+	layer:         ^Layer,
 	hovered_time:  time.Time,
 	call_index:    int,
 	frames:        int,
@@ -203,6 +204,7 @@ new_object :: proc(id: Id) -> ^Object {
 
 destroy_object :: proc(object: ^Object) {
 	destroy_input(&object.input)
+	object^ = {}
 }
 
 make_object_children_array :: proc() -> [dynamic]^Object {
@@ -500,3 +502,4 @@ do_dummy :: proc(loc := #caller_location) {
 	object := get_object(hash(loc))
 	do_object(object)
 }
+

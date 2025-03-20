@@ -1,7 +1,5 @@
 package demo
 
-import "local:ronin"
-import kn "local:katana"
 import "base:runtime"
 import "core:c/libc"
 import "core:fmt"
@@ -20,6 +18,8 @@ import "core:strings"
 import "core:sys/windows"
 import "core:thread"
 import "core:time"
+import kn "local:katana"
+import "local:ronin"
 import "vendor:glfw"
 import "vendor:wgpu"
 
@@ -73,7 +73,7 @@ boolean_section :: proc(state: ^Boolean_Section_State) {
 Analog_Section_State :: struct {
 	float_value:   f32,
 	integer_value: int,
-	float_range: [2]f32,
+	float_range:   [2]f32,
 }
 
 analog_section :: proc(state: ^Analog_Section_State) {
@@ -105,7 +105,8 @@ analog_section :: proc(state: ^Analog_Section_State) {
 	pie({33, 15, 52}, 100, {kn.Red, kn.Green, kn.Blue})
 }
 
-Button_Section_State :: struct {}
+Button_Section_State :: struct {
+}
 
 button_section :: proc(state: ^Button_Section_State) {
 	using ronin
@@ -298,7 +299,7 @@ theme_section :: proc(state: ^Theme_Section_State) {
 			color_picker(color, true)
 			set_rounded_corners(ALL_CORNERS)
 			space()
-			set_width(of_layout_width(1/4))
+			set_width(of_layout_width(1 / 4))
 			slider(&color.r, 0, 255)
 			space()
 			slider(&color.g, 0, 255)
@@ -358,7 +359,10 @@ menu_section :: proc() {
 		get_current_style().default_text_size,
 		get_current_style().default_font,
 	)
-	if begin_tooltip_for_object(last_object().?, tooltip_text.size + get_current_style().text_padding * 2) {
+	if begin_tooltip_for_object(
+		last_object().?,
+		tooltip_text.size + get_current_style().text_padding * 2,
+	) {
 		kn.add_text(
 			tooltip_text,
 			box_center(get_current_layout().box) - tooltip_text.size * 0.5,
@@ -505,7 +509,11 @@ main :: proc() {
 			set_size(to_layout_size)
 			if do_carousel() {
 				if do_page(as_column) {
-					if do_layout(as_column, center_contents, with_box(align_box_inside(get_current_layout().box, 200, 0.5))) {
+					if do_layout(
+						as_column,
+						center_contents,
+						with_box(align_box_inside(get_current_layout().box, 200, 0.5)),
+					) {
 						set_size(that_of_object)
 						set_axis_locks(false, true)
 						h1("Ronin")
@@ -555,3 +563,4 @@ main :: proc() {
 		}
 	}
 }
+
