@@ -1,15 +1,15 @@
 package ronin
 
-import kn "local:katana"
-import "tedit"
-import "core:strings"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
+import "core:strings"
 import "core:unicode"
+import kn "local:katana"
+import "tedit"
 
 Text_Content_Builder :: struct {
-	buf: [dynamic]u8,
+	buf:            [dynamic]u8,
 	needs_new_line: bool,
 }
 
@@ -33,7 +33,7 @@ text_content_builder_write :: proc(b: ^Text_Content_Builder, s: string, range: [
 }
 
 add_global_text_content :: proc(s: string, range: [2]int) {
-	text_content_builder_write(&global_state.text_content_builder, s, range)
+	text_content_builder_write(&ctx.text_content_builder, s, range)
 }
 
 to_ordered_range :: proc(range: [2]$T) -> [2]T {
@@ -58,8 +58,8 @@ point_inside_text :: proc(point: [2]f32, origin: [2]f32, text: kn.Text) -> bool 
 
 text :: proc(
 	content: string,
-	font_size := global_state.style.default_text_size,
-	font := global_state.style.default_font,
+	font_size := ctx.style.default_text_size,
+	font := ctx.style.default_font,
 	align: [2]f32 = 0,
 	color: kn.Color = get_current_style().color.content,
 	loc := #caller_location,
@@ -88,8 +88,8 @@ text :: proc(
 				self.state.current += {.Active}
 			}
 			if .Active in self.state.current {
-				if global_state.last_focused_object != global_state.focused_object &&
-				   global_state.focused_object != self.id &&
+				if ctx.last_focused_object != ctx.focused_object &&
+				   ctx.focused_object != self.id &&
 				   !key_down(.Left_Control) {
 					self.state.current -= {.Active}
 				}
@@ -107,16 +107,12 @@ text :: proc(
 
 label :: proc(
 	text: string,
-	font_size := global_state.style.default_text_size,
-	font := global_state.style.default_font,
+	font_size := ctx.style.default_text_size,
+	font := ctx.style.default_font,
 	color: kn.Color = get_current_style().color.content,
 	loc := #caller_location,
 ) {
-	text_layout := kn.make_text(
-		text,
-		font_size,
-		font,
-	)
+	text_layout := kn.make_text(text, font_size, font)
 	self := get_object(hash(loc))
 	self.size = text_layout.size
 	self.size_is_fixed = true
@@ -134,12 +130,12 @@ label :: proc(
 h1 :: proc(content: string) {
 	text(
 		content,
-		font_size = global_state.style.header_text_size,
-		font = global_state.style.header_font.? or_else global_state.style.default_font,
+		font_size = ctx.style.header_text_size,
+		font = ctx.style.header_font.? or_else ctx.style.default_font,
 	)
 }
 
-icon :: proc(which_one: rune, size: f32 = global_state.style.icon_size, loc := #caller_location) {
+icon :: proc(which_one: rune, size: f32 = ctx.style.icon_size, loc := #caller_location) {
 	style := get_current_style()
 	font := style.icon_font
 	if glyph, ok := kn.get_font_glyph(font, which_one); ok {
@@ -147,7 +143,12 @@ icon :: proc(which_one: rune, size: f32 = global_state.style.icon_size, loc := #
 		self.size = {glyph.advance * size, font.line_height * size}
 		if do_object(self) {
 			if object_is_visible(self) {
-				kn.add_glyph(glyph, size, linalg.floor(box_center(self.box)) - size / 2, style.color.content)
+				kn.add_glyph(
+					glyph,
+					size,
+					linalg.floor(box_center(self.box)) - size / 2,
+					style.color.content,
+				)
 			}
 		}
 	}
@@ -166,24 +167,15 @@ text_mouse_selection :: proc(object: ^Object, data: string, text: ^kn.Selectable
 				object.input.editor.selection = {len(data), 0}
 				// tedit.editor_execute(&object.input.editor, .Select_All)
 			} else {
-				object.input.editor.selection = {
-					text.selection.index,
-					text.selection.index,
-				}
+				object.input.editor.selection = {text.selection.index, text.selection.index}
 			}
 		}
 		switch object.click.count {
 		case 2:
 			allow_precision := text.selection.index != object.input.anchor
 			if text.selection.index <= object.input.anchor {
-				object.input.editor.selection[0] = text.selection.index if (allow_precision && is_separator(rune(data[text.selection.index]))) else max(
-					0,
-					strings.last_index_proc(
-						data[:text.selection.index],
-						is_separator,
-					) +
-					1,
-				)
+				object.input.editor.selection[0] =
+					text.selection.index if (allow_precision && is_separator(rune(data[text.selection.index]))) else max(0, strings.last_index_proc(data[:text.selection.index], is_separator) + 1)
 				object.input.editor.selection[1] = strings.index_proc(
 					data[object.input.anchor:],
 					is_separator,
@@ -196,20 +188,13 @@ text_mouse_selection :: proc(object: ^Object, data: string, text: ^kn.Selectable
 			} else {
 				object.input.editor.selection[1] = max(
 					0,
-					strings.last_index_proc(
-						data[:object.input.anchor],
-						is_separator,
-					) +
-					1,
+					strings.last_index_proc(data[:object.input.anchor], is_separator) + 1,
 				)
 				// `text.selection.index - 1` is safe as long as `text.selection.index > object.input.anchor`
-				object.input.editor.selection[0] = 0 if (allow_precision && is_separator(rune(data[text.selection.index - 1]))) else strings.index_proc(
-					data[text.selection.index:],
-					is_separator,
-				)
+				object.input.editor.selection[0] =
+					0 if (allow_precision && is_separator(rune(data[text.selection.index - 1]))) else strings.index_proc(data[text.selection.index:], is_separator)
 				if object.input.editor.selection[0] == -1 {
-					object.input.editor.selection[0] =
-						len(data)
+					object.input.editor.selection[0] = len(data)
 				} else {
 					object.input.editor.selection[0] += text.selection.index
 				}
@@ -219,3 +204,4 @@ text_mouse_selection :: proc(object: ^Object, data: string, text: ^kn.Selectable
 		}
 	}
 }
+

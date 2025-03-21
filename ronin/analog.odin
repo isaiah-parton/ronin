@@ -1,12 +1,12 @@
 package ronin
 
-import kn "local:katana"
 import "base:intrinsics"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:strconv"
 import "core:strings"
+import kn "local:katana"
 
 Slider :: struct {
 	click_value: f64,
@@ -59,10 +59,7 @@ slider :: proc(
 			new_value := T(
 				clamp(
 					extras.click_value +
-					f64(
-						(global_state.mouse_pos.x - self.click.point.x) /
-						box_width(self.box),
-					) *
+					f64((ctx.mouse_pos.x - self.click.point.x) / box_width(self.box)) *
 						f64(upper - lower),
 					max(lower, lower_limit),
 					min(upper, upper_limit),
@@ -111,7 +108,12 @@ slider :: proc(
 				paint = style.color.content,
 			)
 			kn.pop_scissor()
-			kn.add_box_lines(self.box, style.line_width, get_current_options().radius, paint = style.color.button)
+			kn.add_box_lines(
+				self.box,
+				style.line_width,
+				get_current_options().radius,
+				paint = style.color.button,
+			)
 		}
 
 		push_id(self.id)
@@ -123,9 +125,9 @@ slider :: proc(
 }
 
 Range_Slider :: struct {
-	click_value: f64,
+	click_value:      f64,
 	click_difference: f64,
-	value_index: int,
+	value_index:      int,
 }
 
 range_slider :: proc(
@@ -175,7 +177,9 @@ range_slider :: proc(
 			} else {
 				if .Pressed not_in object.state.previous {
 					extras.value_index = hovered_index
-					extras.click_value = f64(lower_value^ if extras.value_index == 0 else upper_value^)
+					extras.click_value = f64(
+						lower_value^ if extras.value_index == 0 else upper_value^,
+					)
 				}
 				if extras.value_index == 0 {
 					lower_value^ = T(
@@ -215,16 +219,19 @@ range_slider :: proc(
 			kn.push_scissor(kn.make_box(object.box, radius))
 			kn.add_box(object.box, paint = get_current_style().color.field)
 			value_box := Box{{lower_x, object.box.lo.y}, {upper_x, object.box.hi.y}}
-			kn.add_box(
-				value_box,
-				paint = get_current_style().color.button,
-			)
+			kn.add_box(value_box, paint = get_current_style().color.button)
 			if .Hovered in object.state.current {
 				if hovered_index == 0 || key_down(.Left_Shift) {
-					kn.add_box({value_box.lo, {value_box.lo.x + 1, value_box.hi.y}}, paint = get_current_style().color.accent)
+					kn.add_box(
+						{value_box.lo, {value_box.lo.x + 1, value_box.hi.y}},
+						paint = get_current_style().color.accent,
+					)
 				}
 				if hovered_index == 1 || key_down(.Left_Shift) {
-					kn.add_box({{value_box.hi.x - 1, value_box.lo.y}, {value_box.hi.x, value_box.hi.y}}, paint = get_current_style().color.accent)
+					kn.add_box(
+						{{value_box.hi.x - 1, value_box.lo.y}, {value_box.hi.x, value_box.hi.y}},
+						paint = get_current_style().color.accent,
+					)
 				}
 			}
 			kn.set_font(get_current_style().monospace_font)
@@ -243,7 +250,12 @@ range_slider :: proc(
 				paint = get_current_style().color.content,
 			)
 			kn.pop_scissor()
-			kn.add_box_lines(object.box, 1, get_current_options().radius, paint = get_current_style().color.button)
+			kn.add_box_lines(
+				object.box,
+				1,
+				get_current_options().radius,
+				paint = get_current_style().color.button,
+			)
 
 			push_id(object.id)
 			push_options(default_options())
@@ -322,7 +334,11 @@ slider_handle :: proc(box: Box, shape: int, loc := #caller_location) -> (pressed
 	return
 }
 
-progress_bar :: proc(time: f32, color: kn.Color = get_current_style().color.accent, loc := #caller_location) {
+progress_bar :: proc(
+	time: f32,
+	color: kn.Color = get_current_style().color.accent,
+	loc := #caller_location,
+) {
 	time := clamp(time, 0, 1)
 	object := get_object(hash(loc))
 	object.size = {5, 1} * get_current_style().scale
@@ -341,7 +357,11 @@ progress_bar :: proc(time: f32, color: kn.Color = get_current_style().color.acce
 	}
 }
 
-dial :: proc(time: f32, color: kn.Color = get_current_style().color.accent, loc := #caller_location) {
+dial :: proc(
+	time: f32,
+	color: kn.Color = get_current_style().color.accent,
+	loc := #caller_location,
+) {
 	time := clamp(time, 0, 1)
 	object := get_object(hash(loc))
 	object.size = get_current_style().scale * 2
@@ -383,8 +403,8 @@ pie :: proc(values: []f32, total: f32, colors: []kn.Color = {}, loc := #caller_l
 	self.size = get_current_style().scale * 2
 	if do_object(self) {
 		if object_is_visible(self) {
-		radius := min(box_width(self.box), box_height(self.box)) / 2
-		center := box_center(self.box)
+			radius := min(box_width(self.box), box_height(self.box)) / 2
+			center := box_center(self.box)
 			angle := f32(0)
 			for value, i in values {
 				slice_angle := (value / total) * math.TAU
@@ -398,3 +418,4 @@ pie :: proc(values: []f32, total: f32, colors: []kn.Color = {}, loc := #caller_l
 		}
 	}
 }
+

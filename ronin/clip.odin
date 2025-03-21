@@ -1,14 +1,15 @@
 package ronin
 
 push_clip :: proc(box: Box) {
-	push_stack(&global_state.clip_stack, box)
+	push_stack(&ctx.clip_stack, box)
 }
 pop_clip :: proc() {
-	pop_stack(&global_state.clip_stack)
+	pop_stack(&ctx.clip_stack)
 }
 get_current_clip :: proc() -> Box {
-	if global_state.clip_stack.height > 0 {
-		return global_state.clip_stack.items[global_state.clip_stack.height - 1]
+	if ctx.clip_stack.height > 0 {
+		return ctx.clip_stack.items[ctx.clip_stack.height - 1]
 	}
 	return view_box()
 }
+

@@ -4,7 +4,7 @@ import kn "local:katana"
 
 Color_Scheme :: struct {
 	button, button_background, hover, accent, accent_content, content, shadow: kn.Color,
-	field, foreground, lines, foreground_accent, background:       kn.Color,
+	field, foreground, lines, foreground_accent, background:                   kn.Color,
 	grid_background, grid_minor_lines, grid_major_lines:                       kn.Color,
 	checkers0, checkers1:                                                      kn.Color,
 }
@@ -42,15 +42,15 @@ Style_Shape :: struct {
 }
 
 get_current_style :: proc() -> ^Style {
-	return &global_state.style
+	return &ctx.style
 }
 
 rounded_corners :: proc(corners: Corners) -> [4]f32 {
 	return {
-		global_state.style.rounding * f32(i32(.Top_Left in corners)),
-		global_state.style.rounding * f32(i32(.Top_Right in corners)),
-		global_state.style.rounding * f32(i32(.Bottom_Left in corners)),
-		global_state.style.rounding * f32(i32(.Bottom_Right in corners)),
+		ctx.style.rounding * f32(i32(.Top_Left in corners)),
+		ctx.style.rounding * f32(i32(.Top_Right in corners)),
+		ctx.style.rounding * f32(i32(.Bottom_Left in corners)),
+		ctx.style.rounding * f32(i32(.Bottom_Right in corners)),
 	}
 }
 
@@ -159,9 +159,10 @@ vstack_corners :: proc(index, count: int) -> Corners {
 }
 
 set_style_rounding :: proc(amount: f32) {
-	global_state.style.rounding = amount
+	ctx.style.rounding = amount
 }
 
 set_color_scheme :: proc(scheme: Color_Scheme) {
 	get_current_style().color = scheme
 }
+

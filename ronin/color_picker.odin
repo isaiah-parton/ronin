@@ -1,12 +1,12 @@
 package ronin
 
-import kn "local:katana"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
 import "core:strconv"
 import "core:strings"
+import kn "local:katana"
 
 barycentric :: proc(point, a, b, c: [2]f32) -> (u, v: f32) {
 	d := c - a
@@ -81,7 +81,12 @@ Color_Picker :: struct {
 	hsva:      [4]f32,
 }
 
-color_picker :: proc(value: ^kn.Color, show_hex: bool = false, show_alpha: bool = true, loc := #caller_location) {
+color_picker :: proc(
+	value: ^kn.Color,
+	show_hex: bool = false,
+	show_alpha: bool = true,
+	loc := #caller_location,
+) {
 	if value == nil {
 		return
 	}
@@ -90,10 +95,10 @@ color_picker :: proc(value: ^kn.Color, show_hex: bool = false, show_alpha: bool 
 	if show_hex {
 		text_layout := kn.make_text(
 			fmt.tprintf("#%6x", kn.hex_from_color(value^)),
-			global_state.style.default_text_size,
-			global_state.style.monospace_font,
+			ctx.style.default_text_size,
+			ctx.style.monospace_font,
 		)
-		object.size = text_layout.size + global_state.style.text_padding * 2
+		object.size = text_layout.size + ctx.style.text_padding * 2
 	}
 	if object.variant == nil {
 		object.variant = Color_Picker{}
@@ -105,7 +110,11 @@ color_picker :: proc(value: ^kn.Color, show_hex: bool = false, show_alpha: bool 
 		extras := &object.variant.(Color_Picker)
 
 
-		object.animation.hover = animate(object.animation.hover, 0.1, .Hovered in object.state.current)
+		object.animation.hover = animate(
+			object.animation.hover,
+			0.1,
+			.Hovered in object.state.current,
+		)
 		if .Open in object.state.current {
 			extras.open_time = animate(extras.open_time, 0.3, true)
 		} else {
@@ -115,14 +124,15 @@ color_picker :: proc(value: ^kn.Color, show_hex: bool = false, show_alpha: bool 
 			object.state.current += {.Open}
 		}
 		if .Hovered in object.state.current {
-			global_state.cursor_type = .Pointing_Hand
+			ctx.cursor_type = .Pointing_Hand
 		}
-		if point_in_box(global_state.mouse_pos, object.box) {
+		if point_in_box(ctx.mouse_pos, object.box) {
 			hover_object(object)
 		}
 
 		if object_is_visible(object) {
-			accent_color := kn.Black if max(kn.luminance_of(value^), 1 - f32(value.a) / 255) > 0.45 else kn.White
+			accent_color :=
+				kn.Black if max(kn.luminance_of(value^), 1 - f32(value.a) / 255) > 0.45 else kn.White
 			kn.push_scissor(kn.make_box(object.box, get_current_options().radius))
 			draw_checkerboard_pattern(
 				object.box,
@@ -162,7 +172,12 @@ color_picker :: proc(value: ^kn.Color, show_hex: bool = false, show_alpha: bool 
 
 					set_rounded_corners(ALL_CORNERS)
 					foreground()
-					kn.add_box_lines(get_current_layout().box, 1, get_current_options().radius, paint = get_current_style().color.button)
+					kn.add_box_lines(
+						get_current_layout().box,
+						1,
+						get_current_options().radius,
+						paint = get_current_style().color.button,
+					)
 					shrink(10)
 					alpha_slider(&extras.hsva.w)
 					space()
@@ -194,7 +209,7 @@ alpha_slider :: proc(
 	}
 	color := color
 	object := get_object(hash(loc))
-	object.size = global_state.style.scale
+	object.size = ctx.style.scale
 	if axis == 1 {
 		object.size.xy = object.size.yx
 	}
@@ -206,8 +221,7 @@ alpha_slider :: proc(
 
 		if .Pressed in object.state.current {
 			value^ = clamp(
-				(global_state.mouse_pos[i] - object.box.lo[i]) /
-				(object.box.hi[i] - object.box.lo[i]),
+				(ctx.mouse_pos[i] - object.box.lo[i]) / (object.box.hi[i] - object.box.lo[i]),
 				0,
 				1,
 			)
@@ -244,7 +258,7 @@ alpha_slider :: proc(
 			}
 		}
 
-		if point_in_box(global_state.mouse_pos, object.box) {
+		if point_in_box(ctx.mouse_pos, object.box) {
 			hover_object(object)
 		}
 	}
@@ -261,7 +275,6 @@ hsv_wheel :: proc(value: ^[3]f32, loc := #caller_location) {
 		defer end_object()
 
 
-
 		size := min(box_width(object.box), box_height(object.box))
 		outer_radius := size / 2
 		inner_radius := outer_radius * 0.75
@@ -269,7 +282,7 @@ hsv_wheel :: proc(value: ^[3]f32, loc := #caller_location) {
 		center := box_center(object.box)
 		angle := value.x * math.RAD_PER_DEG
 
-		delta_to_mouse := global_state.mouse_pos - center
+		delta_to_mouse := ctx.mouse_pos - center
 		distance_to_mouse := linalg.length(delta_to_mouse)
 
 		if distance_to_mouse <= outer_radius {
@@ -288,7 +301,7 @@ hsv_wheel :: proc(value: ^[3]f32, loc := #caller_location) {
 					value.x += 360
 				}
 			} else {
-				point := global_state.mouse_pos
+				point := ctx.mouse_pos
 				point_a, point_b, point_c := make_a_triangle(center, angle, inner_radius)
 				if !triangle_contains_point(point_a, point_b, point_c, point) {
 					point = nearest_point_in_triangle(point_a, point_b, point_c, point)
@@ -346,3 +359,4 @@ make_a_triangle :: proc(center: [2]f32, angle: f32, radius: f32) -> (a, b, c: [2
 	c = center + {math.cos(angle + TRIANGLE_STEP), math.sin(angle + TRIANGLE_STEP)} * radius
 	return
 }
+

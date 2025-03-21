@@ -96,41 +96,42 @@ Mouse_Cursor :: enum {
 }
 
 key_down :: proc(key: Keyboard_Key) -> bool {
-	return global_state.keys[key]
+	return ctx.keys[key]
 }
 
 key_pressed :: proc(key: Keyboard_Key) -> bool {
-	return global_state.keys[key] && !global_state.last_keys[key]
+	return ctx.keys[key] && !ctx.last_keys[key]
 }
 
 key_released :: proc(key: Keyboard_Key) -> bool {
-	return global_state.last_keys[key] && !global_state.keys[key]
+	return ctx.last_keys[key] && !ctx.keys[key]
 }
 
 consume_key_press :: proc(key: Keyboard_Key) {
-	global_state.keys[key] = false
+	ctx.keys[key] = false
 }
 
 mouse_down :: proc(button: Mouse_Button) -> bool {
-	return button in global_state.mouse_bits
+	return button in ctx.mouse_bits
 }
 
 mouse_pressed :: proc(button: Mouse_Button) -> bool {
-	return (global_state.mouse_bits - global_state.last_mouse_bits) >= {button}
+	return (ctx.mouse_bits - ctx.last_mouse_bits) >= {button}
 }
 
 mouse_released :: proc(button: Mouse_Button) -> bool {
-	return (global_state.last_mouse_bits - global_state.mouse_bits) >= {button}
+	return (ctx.last_mouse_bits - ctx.mouse_bits) >= {button}
 }
 
 mouse_point :: proc() -> [2]f32 {
-	return global_state.mouse_pos
+	return ctx.mouse_pos
 }
 
 reset_input :: proc() {
-	global_state.last_mouse_bits = global_state.mouse_bits
-	global_state.last_mouse_pos = global_state.mouse_pos
-	global_state.last_keys = global_state.keys
-	global_state.mouse_scroll = {}
-	clear(&global_state.runes)
+	ctx.last_mouse_bits = ctx.mouse_bits
+	ctx.last_mouse_pos = ctx.mouse_pos
+	ctx.last_keys = ctx.keys
+	ctx.mouse_scroll = {}
+	clear(&ctx.runes)
 }
+

@@ -119,7 +119,7 @@ end_container :: proc() {
 			   (key_down(.Left_Control) || key_down(.Right_Control)) {
 				old_zoom := extras.target_zoom
 				new_zoom := clamp(
-					(math.round(old_zoom / 0.1) * 0.1) + global_state.mouse_scroll.y * 0.1,
+					(math.round(old_zoom / 0.1) * 0.1) + ctx.mouse_scroll.y * 0.1,
 					1,
 					extras.max_zoom,
 				)
@@ -133,7 +133,7 @@ end_container :: proc() {
 					)
 				}
 			} else {
-				delta_scroll := global_state.mouse_scroll
+				delta_scroll := ctx.mouse_scroll
 				if key_down(.Left_Shift) || key_down(.Right_Shift) {
 					delta_scroll.xy = delta_scroll.yx
 				}
@@ -149,7 +149,7 @@ end_container :: proc() {
 			if abs(delta_zoom) > 0.001 {
 				draw_frames(1)
 			}
-			extras.zoom += delta_zoom * 15 * global_state.delta_time
+			extras.zoom += delta_zoom * 15 * ctx.delta_time
 		}
 
 		content_size := extras.space * extras.zoom
@@ -160,7 +160,7 @@ end_container :: proc() {
 			linalg.min(extras.target_scroll, target_content_size - view_size),
 			0,
 		)
-		delta_scroll := (extras.target_scroll - extras.scroll) * global_state.delta_time * 15
+		delta_scroll := (extras.target_scroll - extras.scroll) * ctx.delta_time * 15
 		extras.scroll += delta_scroll
 
 		if abs(delta_scroll.x) > 0.01 || abs(delta_scroll.y) > 0.01 {
@@ -183,10 +183,10 @@ end_container :: proc() {
 		if display_scroll_y {
 			box := get_box_cut_right(
 				inner_box,
-				extras.scroll_time.y * global_state.style.shape.scrollbar_thickness,
+				extras.scroll_time.y * ctx.style.shape.scrollbar_thickness,
 			)
 			if display_scroll_x {
-				box.hi.y -= extras.scroll_time.x * global_state.style.shape.scrollbar_thickness
+				box.hi.y -= extras.scroll_time.x * ctx.style.shape.scrollbar_thickness
 			}
 			if scrollbar(
 				vertical = true,
@@ -195,7 +195,7 @@ end_container :: proc() {
 				travel = content_size.y - box_height(object.box),
 				handle_size = max(
 					box_height(box) * box_height(object.box) / content_size.y,
-					global_state.style.scrollbar_thickness * 2,
+					ctx.style.scrollbar_thickness * 2,
 				),
 			) {
 				extras.target_scroll.y = extras.scroll.y
@@ -205,10 +205,10 @@ end_container :: proc() {
 		if display_scroll_x {
 			box := get_box_cut_bottom(
 				inner_box,
-				extras.scroll_time.x * global_state.style.shape.scrollbar_thickness,
+				extras.scroll_time.x * ctx.style.shape.scrollbar_thickness,
 			)
 			if display_scroll_y {
-				box.hi.x -= extras.scroll_time.y * global_state.style.shape.scrollbar_thickness
+				box.hi.x -= extras.scroll_time.y * ctx.style.shape.scrollbar_thickness
 			}
 			if scrollbar(
 				box = box,
@@ -216,7 +216,7 @@ end_container :: proc() {
 				travel = content_size.x - box_width(object.box),
 				handle_size = max(
 					box_width(box) * box_width(object.box) / content_size.x,
-					global_state.style.scrollbar_thickness * 2,
+					ctx.style.scrollbar_thickness * 2,
 				),
 			) {
 				extras.target_scroll.x = extras.scroll.x
@@ -294,10 +294,10 @@ scrollbar :: proc(
 
 		if .Pressed in object.state.current {
 			if .Pressed not_in object.state.previous {
-				global_state.drag_offset = handle_box.lo - mouse_point()
+				ctx.drag_offset = handle_box.lo - mouse_point()
 			}
 			time :=
-				((mouse_point()[i] + global_state.drag_offset[i]) - object.box.lo[i]) /
+				((mouse_point()[i] + ctx.drag_offset[i]) - object.box.lo[i]) /
 				handle_travel_distance
 			pos^ = travel * clamp(time, f32(0), f32(1))
 			changed = true
@@ -305,3 +305,4 @@ scrollbar :: proc(
 	}
 	return
 }
+

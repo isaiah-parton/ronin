@@ -65,10 +65,9 @@ Wave_Effect :: struct {
 	time:  f32,
 }
 
-global_state: Global_State
+ctx: Context
 
-@(private)
-Global_State :: struct {
+Context :: struct {
 	ready:                    bool,
 	window:                   glfw.WindowHandle,
 	window_x:                 i32,
@@ -161,27 +160,27 @@ Global_State :: struct {
 }
 
 seconds :: proc() -> f64 {
-	return time.duration_seconds(time.diff(global_state.start_time, global_state.last_frame_time))
+	return time.duration_seconds(time.diff(ctx.start_time, ctx.last_frame_time))
 }
 
 draw_frames :: proc(how_many: int) {
-	global_state.frames_to_draw = max(global_state.frames_to_draw, how_many)
+	ctx.frames_to_draw = max(ctx.frames_to_draw, how_many)
 }
 
 view_box :: proc() -> Box {
-	return Box{{}, global_state.view}
+	return Box{{}, ctx.view}
 }
 
 view_width :: proc() -> f32 {
-	return global_state.view.x
+	return ctx.view.x
 }
 
 view_height :: proc() -> f32 {
-	return global_state.view.y
+	return ctx.view.y
 }
 
 focus_next_object :: proc() {
-	global_state.focus_next = true
+	ctx.focus_next = true
 }
 
 load_default_fonts :: proc() -> bool {
@@ -203,30 +202,27 @@ load_default_fonts :: proc() -> bool {
 	HEADER_FONT_JSON :: #load(FONT_PATH + "/" + HEADER_FONT + ".json", []u8)
 	ICON_FONT_JSON :: #load(FONT_PATH + "/" + ICON_FONT + ".json", []u8)
 
-	global_state.style.default_font = kn.load_font_from_slices(
+	ctx.style.default_font = kn.load_font_from_slices(
 		DEFAULT_FONT_IMAGE,
 		DEFAULT_FONT_JSON,
 	) or_return
-	global_state.style.bold_font = kn.load_font_from_slices(
-		BOLD_FONT_IMAGE,
-		BOLD_FONT_JSON,
-	) or_return
-	global_state.style.monospace_font = kn.load_font_from_slices(
+	ctx.style.bold_font = kn.load_font_from_slices(BOLD_FONT_IMAGE, BOLD_FONT_JSON) or_return
+	ctx.style.monospace_font = kn.load_font_from_slices(
 		MONOSPACE_FONT_IMAGE,
 		MONOSPACE_FONT_JSON,
 	) or_return
-	// global_state.style.header_font = kn.load_font_from_slices(
+	// ctx.style.header_font = kn.load_font_from_slices(
 	// 	HEADER_FONT_IMAGE,
 	// 	HEADER_FONT_JSON,
 	// ) or_return
-	global_state.style.header_font = global_state.style.bold_font
-	global_state.style.icon_font = kn.load_font_from_slices(
+	ctx.style.header_font = ctx.style.bold_font
+	ctx.style.icon_font = kn.load_font_from_slices(
 		ICON_FONT_IMAGE,
 		ICON_FONT_JSON,
 		// true,
 	) or_return
 
-	kn.set_fallback_font(global_state.style.icon_font)
+	kn.set_fallback_font(ctx.style.icon_font)
 
 	return true
 }
@@ -234,106 +230,100 @@ load_default_fonts :: proc() -> bool {
 start :: proc(window: glfw.WindowHandle, style: Maybe(Style) = nil) -> bool {
 	if window == nil do return false
 
-	global_state.window = window
-	width, height := glfw.GetWindowSize(global_state.window)
+	ctx.window = window
+	width, height := glfw.GetWindowSize(ctx.window)
 
-	global_state.visible = true
-	global_state.focused = true
-	global_state.view = {f32(width), f32(height)}
-	global_state.last_frame_time = time.now()
-	global_state.start_time = time.now()
+	ctx.visible = true
+	ctx.focused = true
+	ctx.view = {f32(width), f32(height)}
+	ctx.last_frame_time = time.now()
+	ctx.start_time = time.now()
 
-	global_state.cursors[.Normal] = glfw.CreateStandardCursor(glfw.ARROW_CURSOR)
-	global_state.cursors[.Crosshair] = glfw.CreateStandardCursor(glfw.CROSSHAIR_CURSOR)
-	global_state.cursors[.Pointing_Hand] = glfw.CreateStandardCursor(glfw.POINTING_HAND_CURSOR)
-	global_state.cursors[.I_Beam] = glfw.CreateStandardCursor(glfw.IBEAM_CURSOR)
-	global_state.cursors[.Resize_EW] = glfw.CreateStandardCursor(glfw.RESIZE_EW_CURSOR)
-	global_state.cursors[.Resize_NS] = glfw.CreateStandardCursor(glfw.RESIZE_NS_CURSOR)
-	global_state.cursors[.Resize_NESW] = glfw.CreateStandardCursor(glfw.RESIZE_NESW_CURSOR)
-	global_state.cursors[.Resize_NWSE] = glfw.CreateStandardCursor(glfw.RESIZE_NWSE_CURSOR)
+	ctx.cursors[.Normal] = glfw.CreateStandardCursor(glfw.ARROW_CURSOR)
+	ctx.cursors[.Crosshair] = glfw.CreateStandardCursor(glfw.CROSSHAIR_CURSOR)
+	ctx.cursors[.Pointing_Hand] = glfw.CreateStandardCursor(glfw.POINTING_HAND_CURSOR)
+	ctx.cursors[.I_Beam] = glfw.CreateStandardCursor(glfw.IBEAM_CURSOR)
+	ctx.cursors[.Resize_EW] = glfw.CreateStandardCursor(glfw.RESIZE_EW_CURSOR)
+	ctx.cursors[.Resize_NS] = glfw.CreateStandardCursor(glfw.RESIZE_NS_CURSOR)
+	ctx.cursors[.Resize_NESW] = glfw.CreateStandardCursor(glfw.RESIZE_NESW_CURSOR)
+	ctx.cursors[.Resize_NWSE] = glfw.CreateStandardCursor(glfw.RESIZE_NWSE_CURSOR)
 
 	glfw.SetWindowIconifyCallback(
-		global_state.window,
-		proc "c" (_: glfw.WindowHandle, _: i32) {global_state.visible = false},
+		ctx.window,
+		proc "c" (_: glfw.WindowHandle, _: i32) {ctx.visible = false},
 	)
 	glfw.SetWindowFocusCallback(
-		global_state.window,
-		proc "c" (_: glfw.WindowHandle, _: i32) {global_state.visible = true},
+		ctx.window,
+		proc "c" (_: glfw.WindowHandle, _: i32) {ctx.visible = true},
 	)
 	glfw.SetWindowMaximizeCallback(
-		global_state.window,
-		proc "c" (_: glfw.WindowHandle, _: i32) {global_state.visible = true},
+		ctx.window,
+		proc "c" (_: glfw.WindowHandle, _: i32) {ctx.visible = true},
 	)
-	glfw.SetScrollCallback(global_state.window, proc "c" (_: glfw.WindowHandle, x, y: f64) {
+	glfw.SetScrollCallback(ctx.window, proc "c" (_: glfw.WindowHandle, x, y: f64) {
 		context = runtime.default_context()
-		global_state.mouse_scroll = {f32(x), f32(y)}
+		ctx.mouse_scroll = {f32(x), f32(y)}
 		draw_frames(2)
 	})
-	glfw.SetWindowSizeCallback(
-		global_state.window,
-		proc "c" (_: glfw.WindowHandle, width, height: i32) {
-			context = runtime.default_context()
-
-			width := max(width, 1)
-			height := max(height, 1)
-
-			global_state.surface_config.width = u32(width)
-			global_state.surface_config.height = u32(height)
-			wgpu.SurfaceConfigure(global_state.surface, &global_state.surface_config)
-
-			global_state.view = {f32(width), f32(height)}
-			draw_frames(1)
-		},
-	)
-	glfw.SetCharCallback(global_state.window, proc "c" (_: glfw.WindowHandle, char: rune) {
+	glfw.SetWindowSizeCallback(ctx.window, proc "c" (_: glfw.WindowHandle, width, height: i32) {
 		context = runtime.default_context()
-		append(&global_state.runes, char)
+
+		width := max(width, 1)
+		height := max(height, 1)
+
+		ctx.surface_config.width = u32(width)
+		ctx.surface_config.height = u32(height)
+		wgpu.SurfaceConfigure(ctx.surface, &ctx.surface_config)
+
+		ctx.view = {f32(width), f32(height)}
+		draw_frames(1)
+	})
+	glfw.SetCharCallback(ctx.window, proc "c" (_: glfw.WindowHandle, char: rune) {
+		context = runtime.default_context()
+		append(&ctx.runes, char)
 		draw_frames(2)
 	})
-	glfw.SetKeyCallback(
-		global_state.window,
-		proc "c" (_: glfw.WindowHandle, key, _, action, _: i32) {
-			context = runtime.default_context()
-			draw_frames(2)
-			if key < 0 {
-				return
-			}
-			switch action {
-			case glfw.PRESS:
-				global_state.keys[Keyboard_Key(key)] = true
-				global_state.mouse_press_point = mouse_point()
-			case glfw.RELEASE:
-				global_state.keys[Keyboard_Key(key)] = false
-			case glfw.REPEAT:
-				global_state.keys[Keyboard_Key(key)] = true
-				global_state.last_keys[Keyboard_Key(key)] = false
-			}
-		},
-	)
-	glfw.SetCursorPosCallback(global_state.window, proc "c" (_: glfw.WindowHandle, x, y: f64) {
+	glfw.SetKeyCallback(ctx.window, proc "c" (_: glfw.WindowHandle, key, _, action, _: i32) {
 		context = runtime.default_context()
-		global_state.mouse_pos = {f32(x), f32(y)}
+		draw_frames(2)
+		if key < 0 {
+			return
+		}
+		switch action {
+		case glfw.PRESS:
+			ctx.keys[Keyboard_Key(key)] = true
+			ctx.mouse_press_point = mouse_point()
+		case glfw.RELEASE:
+			ctx.keys[Keyboard_Key(key)] = false
+		case glfw.REPEAT:
+			ctx.keys[Keyboard_Key(key)] = true
+			ctx.last_keys[Keyboard_Key(key)] = false
+		}
+	})
+	glfw.SetCursorPosCallback(ctx.window, proc "c" (_: glfw.WindowHandle, x, y: f64) {
+		context = runtime.default_context()
+		ctx.mouse_pos = {f32(x), f32(y)}
 		draw_frames(2)
 	})
 	glfw.SetMouseButtonCallback(
-		global_state.window,
+		ctx.window,
 		proc "c" (_: glfw.WindowHandle, button, action, _: i32) {
 			context = runtime.default_context()
 			draw_frames(2)
 			switch action {
 			case glfw.PRESS:
-				global_state.mouse_button = Mouse_Button(button)
-				global_state.mouse_bits += {Mouse_Button(button)}
-				global_state.click_mouse_pos = global_state.mouse_pos
+				ctx.mouse_button = Mouse_Button(button)
+				ctx.mouse_bits += {Mouse_Button(button)}
+				ctx.click_mouse_pos = ctx.mouse_pos
 			case glfw.RELEASE:
-				global_state.mouse_release_time = time.now()
-				global_state.mouse_bits -= {Mouse_Button(button)}
+				ctx.mouse_release_time = time.now()
+				ctx.mouse_bits -= {Mouse_Button(button)}
 			}
 		},
 	)
 
-	global_state.instance = wgpu.CreateInstance()
-	global_state.surface = glfwglue.GetSurface(global_state.instance, window)
+	ctx.instance = wgpu.CreateInstance()
+	ctx.surface = glfwglue.GetSurface(ctx.instance, window)
 
 	on_device :: proc "c" (
 		status: wgpu.RequestDeviceStatus,
@@ -347,7 +337,7 @@ start :: proc(window: glfw.WindowHandle, style: Maybe(Style) = nil) -> bool {
 		case .InstanceDropped:
 			panic("WGPU instance dropped!")
 		case .Success:
-			(^Global_State)(userdata1).device = device
+			(^Context)(userdata1).device = device
 		case .Error:
 			fmt.panicf("Unable to aquire device: %s", message)
 		case .Unknown:
@@ -367,7 +357,7 @@ start :: proc(window: glfw.WindowHandle, style: Maybe(Style) = nil) -> bool {
 		case .InstanceDropped:
 			panic("WGPU instance dropped!")
 		case .Success:
-			(^Global_State)(userdata1).adapter = adapter
+			(^Context)(userdata1).adapter = adapter
 			if info, status := wgpu.AdapterGetInfo(adapter); status == .Success {
 				fmt.printfln("Using %v on %v", info.backendType, info.description)
 			}
@@ -387,24 +377,20 @@ start :: proc(window: glfw.WindowHandle, style: Maybe(Style) = nil) -> bool {
 	}
 
 	wgpu.InstanceRequestAdapter(
-		global_state.instance,
+		ctx.instance,
 		&{powerPreference = .LowPower},
-		{callback = on_adapter, userdata1 = &global_state},
+		{callback = on_adapter, userdata1 = &ctx},
 	)
-	global_state.surface_config, _ = kn.surface_configuration(
-		global_state.device,
-		global_state.adapter,
-		global_state.surface,
-	)
-	global_state.surface_config.width = u32(width)
-	global_state.surface_config.height = u32(height)
-	wgpu.SurfaceConfigure(global_state.surface, &global_state.surface_config)
+	ctx.surface_config, _ = kn.surface_configuration(ctx.device, ctx.adapter, ctx.surface)
+	ctx.surface_config.width = u32(width)
+	ctx.surface_config.height = u32(height)
+	wgpu.SurfaceConfigure(ctx.surface, &ctx.surface_config)
 
-	kn.start(global_state.device, global_state.surface)
+	kn.start(ctx.device, ctx.surface)
 
 	if style == nil {
-		global_state.style.color = dark_color_scheme()
-		global_state.style.shape = default_style_shape()
+		ctx.style.color = dark_color_scheme()
+		ctx.style.shape = default_style_shape()
 		if !load_default_fonts() {
 			fmt.printfln(
 				"Fatal: failed to load default fonts from '%s'",
@@ -413,23 +399,23 @@ start :: proc(window: glfw.WindowHandle, style: Maybe(Style) = nil) -> bool {
 			return false
 		}
 	} else {
-		global_state.style = style.?
+		ctx.style = style.?
 	}
 
-	global_state.ready = true
+	ctx.ready = true
 	draw_frames(1)
 
 	return true
 }
 
 new_frame :: proc() {
-	if !global_state.disable_frame_skip {
+	if !ctx.disable_frame_skip {
 		time.sleep(
 			max(
 				0,
 				time.Duration(time.Second) /
-					time.Duration(max(global_state.desired_fps, DEFAULT_DESIRED_FPS)) -
-				time.since(global_state.last_frame_time),
+					time.Duration(max(ctx.desired_fps, DEFAULT_DESIRED_FPS)) -
+				time.since(ctx.last_frame_time),
 			),
 		)
 	}
@@ -437,67 +423,65 @@ new_frame :: proc() {
 	profiler_scope(.New_Frame)
 
 	now := time.now()
-	global_state.frame_duration = time.diff(global_state.last_frame_time, now)
-	global_state.delta_time = f32(time.duration_seconds(global_state.frame_duration))
-	global_state.last_frame_time = now
-	global_state.frames += 1
-	global_state.frames_so_far += 1
-	if time.since(global_state.last_second) >= time.Second {
-		global_state.last_second = time.now()
-		global_state.frames_this_second = global_state.frames_so_far
-		global_state.frames_so_far = 0
+	ctx.frame_duration = time.diff(ctx.last_frame_time, now)
+	ctx.delta_time = f32(time.duration_seconds(ctx.frame_duration))
+	ctx.last_frame_time = now
+	ctx.frames += 1
+	ctx.frames_so_far += 1
+	if time.since(ctx.last_second) >= time.Second {
+		ctx.last_second = time.now()
+		ctx.frames_this_second = ctx.frames_so_far
+		ctx.frames_so_far = 0
 	}
 
 	reset_input()
 	glfw.PollEvents()
 
-	global_state.layer_stack.height = 0
-	global_state.object_stack.height = 0
-	global_state.panel_stack.height = 0
-	global_state.options_stack.items[0] = default_options()
+	ctx.layer_stack.height = 0
+	ctx.object_stack.height = 0
+	ctx.panel_stack.height = 0
+	ctx.options_stack.items[0] = default_options()
 
-	reset_panel_snap_state(&global_state.panel_snapping)
+	reset_panel_snap_state(&ctx.panel_snapping)
 
-	global_state.object_index = 0
+	ctx.object_index = 0
 
-	clear(&global_state.debug.hovered_objects)
+	clear(&ctx.debug.hovered_objects)
 
 	if (key_down(.Left_Control) || key_down(.Right_Control)) && key_pressed(.C) {
-		set_clipboard_string(string(global_state.text_content_builder.buf[:]))
+		set_clipboard_string(string(ctx.text_content_builder.buf[:]))
 	}
-	text_content_builder_reset(&global_state.text_content_builder)
+	text_content_builder_reset(&ctx.text_content_builder)
 
 	update_layers()
 	update_layer_references()
 	clean_up_objects()
 	update_object_references()
 
-	clear(&global_state.tooltip_boxes)
+	clear(&ctx.tooltip_boxes)
 
 	if key_pressed(.Tab) {
 		cycle_object_active(1 - int(key_down(.Left_Shift)) * 2)
 	}
 
 	if key_pressed(.Escape) {
-		global_state.focused_object = 0
+		ctx.focused_object = 0
 	}
 
 	if key_pressed(.F3) {
-		global_state.debug.enabled = !global_state.debug.enabled
+		ctx.debug.enabled = !ctx.debug.enabled
 		draw_frames(1)
 	}
 
 	if key_pressed(.F11) {
-		monitor := glfw.GetWindowMonitor(global_state.window)
+		monitor := glfw.GetWindowMonitor(ctx.window)
 		if monitor == nil {
 			monitor = glfw.GetPrimaryMonitor()
 			mode := glfw.GetVideoMode(monitor)
-			global_state.window_x, global_state.window_y = glfw.GetWindowPos(global_state.window)
-			global_state.window_width, global_state.window_height = glfw.GetWindowSize(
-				global_state.window,
-			)
+			ctx.window_x, ctx.window_y = glfw.GetWindowPos(ctx.window)
+			ctx.window_width, ctx.window_height = glfw.GetWindowSize(ctx.window)
 			glfw.SetWindowMonitor(
-				global_state.window,
+				ctx.window,
 				monitor,
 				0,
 				0,
@@ -507,12 +491,12 @@ new_frame :: proc() {
 			)
 		} else {
 			glfw.SetWindowMonitor(
-				global_state.window,
+				ctx.window,
 				nil,
-				global_state.window_x,
-				global_state.window_y,
-				global_state.window_width,
-				global_state.window_height,
+				ctx.window_x,
+				ctx.window_y,
+				ctx.window_width,
+				ctx.window_height,
 				0,
 			)
 		}
@@ -520,18 +504,15 @@ new_frame :: proc() {
 
 	kn.new_frame()
 
-	global_state.id_stack.height = 0
-	global_state.layout_stack.height = 0
-	global_state.object_stack.height = 0
-	global_state.layer_stack.height = 0
-	global_state.panel_stack.height = 0
+	ctx.id_stack.height = 0
+	ctx.layout_stack.height = 0
+	ctx.object_stack.height = 0
+	ctx.layer_stack.height = 0
+	ctx.panel_stack.height = 0
 
-	push_stack(&global_state.id_stack, FNV1A32_OFFSET_BASIS)
+	push_stack(&ctx.id_stack, FNV1A32_OFFSET_BASIS)
 	begin_layer(.Back)
-	push_stack(
-		&global_state.layout_stack,
-		Layout{box = view_box(), bounds = view_box(), side = .Top},
-	)
+	push_stack(&ctx.layout_stack, Layout{box = view_box(), bounds = view_box(), side = .Top})
 
 	profiler_begin_scope(.Construct)
 }
@@ -540,7 +521,7 @@ cycle_object_active :: proc(increment: int = 1) {
 	objects: [dynamic]^Object
 	defer delete(objects)
 
-	for object in global_state.objects {
+	for object in ctx.objects {
 		if .Is_Input in object.flags {
 			append(&objects, object)
 		}
@@ -552,7 +533,7 @@ cycle_object_active :: proc(increment: int = 1) {
 
 	for i in 0 ..< len(objects) {
 		objects[i].state.current -= {.Active}
-		if objects[i].id == global_state.last_activated_object {
+		if objects[i].id == ctx.last_activated_object {
 			j := i + increment
 			for j < 0 do j += len(objects)
 			for j >= len(objects) do j -= len(objects)
@@ -569,72 +550,72 @@ present :: proc() {
 	profiler_scope(.Render)
 
 	when DEBUG {
-		if global_state.debug.enabled {
+		if ctx.debug.enabled {
 			set_cursor(.Crosshair)
 			if key_pressed(.F6) {
-				global_state.disable_frame_skip = !global_state.disable_frame_skip
+				ctx.disable_frame_skip = !ctx.disable_frame_skip
 			}
 			if key_pressed(.F7) {
-				global_state.debug.wireframe = !global_state.debug.wireframe
+				ctx.debug.wireframe = !ctx.debug.wireframe
 			}
-			draw_debug_stuff(&global_state.debug)
+			draw_debug_stuff(&ctx.debug)
 		}
 	}
 
-	if global_state.cursor_type == .None {
-		glfw.SetInputMode(global_state.window, glfw.CURSOR, glfw.CURSOR_HIDDEN)
+	if ctx.cursor_type == .None {
+		glfw.SetInputMode(ctx.window, glfw.CURSOR, glfw.CURSOR_HIDDEN)
 	} else {
-		glfw.SetInputMode(global_state.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
-		glfw.SetCursor(global_state.window, global_state.cursors[global_state.cursor_type])
+		glfw.SetInputMode(ctx.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
+		glfw.SetCursor(ctx.window, ctx.cursors[ctx.cursor_type])
 	}
-	global_state.cursor_type = .Normal
+	ctx.cursor_type = .Normal
 
-	if global_state.frames_to_draw > 0 && global_state.visible {
+	if ctx.frames_to_draw > 0 && ctx.visible {
 		kn.present()
-		global_state.drawn_frames += 1
-		global_state.frames_to_draw -= 1
+		ctx.drawn_frames += 1
+		ctx.frames_to_draw -= 1
 	}
 }
 
 shutdown :: proc() {
-	if !global_state.ready {
+	if !ctx.ready {
 		return
 	}
 
-	for &object in global_state.objects {
+	for &object in ctx.objects {
 		destroy_object(object)
 	}
-	delete(global_state.objects)
-	delete(global_state.object_map)
+	delete(ctx.objects)
+	delete(ctx.object_map)
 
-	for layer in global_state.layer_array {
+	for layer in ctx.layer_array {
 		destroy_layer(layer)
 		free(layer)
 	}
 
-	delete(global_state.layer_array)
-	delete(global_state.panel_map)
-	delete(global_state.layer_map)
-	delete(global_state.runes)
+	delete(ctx.layer_array)
+	delete(ctx.panel_map)
+	delete(ctx.layer_map)
+	delete(ctx.runes)
 
-	kn.destroy_font(&global_state.style.default_font)
-	kn.destroy_font(&global_state.style.monospace_font)
-	kn.destroy_font(&global_state.style.icon_font)
-	if font, ok := global_state.style.header_font.?; ok {
+	kn.destroy_font(&ctx.style.default_font)
+	kn.destroy_font(&ctx.style.monospace_font)
+	kn.destroy_font(&ctx.style.icon_font)
+	if font, ok := ctx.style.header_font.?; ok {
 		kn.destroy_font(&font)
 	}
 
-	destroy_debug_state(&global_state.debug)
+	destroy_debug_state(&ctx.debug)
 
 	kn.shutdown()
 }
 
 delta_time :: proc() -> f32 {
-	return global_state.delta_time
+	return ctx.delta_time
 }
 
 should_close_window :: proc() -> bool {
-	return bool(glfw.WindowShouldClose(global_state.window))
+	return bool(glfw.WindowShouldClose(ctx.window))
 }
 
 set_rounded_corners :: proc(corners: Corners) {
@@ -642,24 +623,24 @@ set_rounded_corners :: proc(corners: Corners) {
 }
 
 user_focus_just_changed :: proc() -> bool {
-	return global_state.focused_object != global_state.last_focused_object
+	return ctx.focused_object != ctx.last_focused_object
 }
 
 set_clipboard_string :: proc(str: string) {
 	cstr := strings.clone_to_cstring(str)
 	defer delete(cstr)
-	glfw.SetClipboardString(global_state.window, cstr)
+	glfw.SetClipboardString(ctx.window, cstr)
 }
 
 __set_clipboard_string :: proc(_: rawptr, str: string) -> bool {
 	cstr := strings.clone_to_cstring(str)
 	defer delete(cstr)
-	glfw.SetClipboardString(global_state.window, cstr)
+	glfw.SetClipboardString(ctx.window, cstr)
 	return true
 }
 
 __get_clipboard_string :: proc(_: rawptr) -> (str: string, ok: bool) {
-	str = glfw.GetClipboardString(global_state.window)
+	str = glfw.GetClipboardString(ctx.window)
 	ok = len(str) > 0
 	return
 }
@@ -668,7 +649,7 @@ draw_shadow :: proc(box: kn.Box) {
 	if kn.disable_scissor() {
 		kn.add_box_shadow(
 			move_box(box, 3),
-			global_state.style.rounding,
+			ctx.style.rounding,
 			6,
 			get_current_style().color.shadow,
 		)

@@ -1,11 +1,11 @@
 package ronin
 
-import kn "local:katana"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
 import "core:time"
+import kn "local:katana"
 
 DEFAULT_TOOLTIP_OFFSET :: 10
 
@@ -30,15 +30,24 @@ tooltip_for_last_object :: proc(
 	text: string,
 	side: Side = .Bottom,
 	delay: time.Duration = time.Second,
-	font: kn.Font = global_state.style.default_font,
+	font: kn.Font = ctx.style.default_font,
 ) {
 	object := last_object().?
 	if .Hovered not_in object.state.current {
 		return
 	}
 	text_layout := kn.make_text(text, get_current_style().default_text_size, font)
-	if begin_tooltip_for_object(object, text_layout.size + get_current_style().text_padding * 2, side, delay) {
-		kn.add_text(text_layout, get_current_layout().box.lo + get_current_style().text_padding, paint = get_current_style().color.content)
+	if begin_tooltip_for_object(
+		object,
+		text_layout.size + get_current_style().text_padding * 2,
+		side,
+		delay,
+	) {
+		kn.add_text(
+			text_layout,
+			get_current_layout().box.lo + get_current_style().text_padding,
+			paint = get_current_style().color.content,
+		)
 		end_tooltip()
 	}
 }
@@ -104,7 +113,7 @@ begin_tooltip_with_options :: proc(size: [2]f32, side: Side = .Bottom, origin: u
 			anchor_point = {v.hi.x, (v.lo.y + v.hi.y) / 2}
 		}
 	case:
-		anchor_point = global_state.mouse_pos
+		anchor_point = ctx.mouse_pos
 	}
 
 	switch side {
@@ -137,8 +146,8 @@ begin_tooltip_with_options :: proc(size: [2]f32, side: Side = .Bottom, origin: u
 	kn.translate(-anchor_point)
 	kn.disable_scissor()
 	draw_shadow(object.box)
-	kn.add_box(object.box, global_state.style.rounding, get_current_style().color.foreground)
-	kn.add_box_lines(object.box, 1, global_state.style.rounding, get_current_style().color.lines)
+	kn.add_box(object.box, ctx.style.rounding, get_current_style().color.foreground)
+	kn.add_box_lines(object.box, 1, ctx.style.rounding, get_current_style().color.lines)
 	return true
 }
 
@@ -151,7 +160,7 @@ end_tooltip :: proc() {
 
 avoid_other_tooltip_boxes :: proc(box0: Box, margin: f32, bounds: Box) -> Box {
 	box0 := box0
-	for box1 in global_state.tooltip_boxes {
+	for box1 in ctx.tooltip_boxes {
 		if box1 == box0 do continue
 		min_distance := (box_size(box0) + box_size(box1)) / 2 + margin
 		center0 := box_center(box0)
@@ -170,6 +179,7 @@ make_tooltip_box :: proc(origin, size, align: [2]f32, bounds: Box) -> Box {
 	box.hi = box.lo + size
 	box = avoid_other_tooltip_boxes(box, 4, bounds)
 	box = snapped_box(box)
-	append(&global_state.tooltip_boxes, box)
+	append(&ctx.tooltip_boxes, box)
 	return box
 }
+

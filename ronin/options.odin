@@ -28,8 +28,8 @@ Object_Size_Variant :: union {
 }
 
 Object_Metrics_Descriptor :: struct($T: typeid) {
-	cut_size: T,
-	desired_size: T,
+	cut_size:        T,
+	desired_size:    T,
 	compare_methods: T,
 }
 
@@ -44,12 +44,18 @@ Options :: struct {
 	radius:         [4]f32,
 	size:           [2]f32,
 	methods:        [2]Size_Method,
-	unlocked: [2]bool,
+	unlocked:       [2]bool,
 	hover_to_focus: bool,
 	object_height:  int,
 }
 
-exact_size_and_method_from_options :: proc(axis: int, opts: ..Size_Option) -> (value: f32, method: Size_Method) {
+exact_size_and_method_from_options :: proc(
+	axis: int,
+	opts: ..Size_Option,
+) -> (
+	value: f32,
+	method: Size_Method,
+) {
 	defined_method: Maybe(Size_Method)
 	for opt in opts {
 		switch v in opt {
@@ -117,25 +123,22 @@ set_cut_size :: proc(opts: ..Size_Option) {
 }
 
 default_options :: proc() -> Options {
-	return Options {
-		radius = get_current_style().rounding,
-		size = {},
-		methods = {},
-	}
+	return Options{radius = get_current_style().rounding, size = {}, methods = {}}
 }
 
 get_current_options :: proc() -> ^Options {
-	return &global_state.options_stack.items[max(global_state.options_stack.height - 1, 0)]
+	return &ctx.options_stack.items[max(ctx.options_stack.height - 1, 0)]
 }
 
 push_get_current_options :: proc() {
-	push_stack(&global_state.options_stack, get_current_options()^)
+	push_stack(&ctx.options_stack, get_current_options()^)
 }
 
 push_options :: proc(options: Options = {}) {
-	push_stack(&global_state.options_stack, options)
+	push_stack(&ctx.options_stack, options)
 }
 
 pop_options :: proc() {
-	pop_stack(&global_state.options_stack)
+	pop_stack(&ctx.options_stack)
 }
+

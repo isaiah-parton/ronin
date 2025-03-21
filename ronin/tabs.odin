@@ -1,10 +1,10 @@
 package ronin
 
-import kn "local:katana"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:slice"
+import kn "local:katana"
 
 tab :: proc(text: string, active: bool, loc := #caller_location) -> (clicked: bool) {
 	object := get_object(hash(loc))
@@ -21,11 +21,23 @@ tab :: proc(text: string, active: bool, loc := #caller_location) -> (clicked: bo
 		}
 		if object_is_visible(object) {
 			if active {
-				kn.add_box(object.box, get_current_options().radius * {1, 1, 0, 0}, paint = style.color.foreground)
+				kn.add_box(
+					object.box,
+					get_current_options().radius * {1, 1, 0, 0},
+					paint = style.color.foreground,
+				)
 			} else {
-				kn.add_box(shrink_box(object.box, 2), get_current_options().radius, paint = kn.mix(0.5, style.color.foreground_accent, style.color.foreground))
+				kn.add_box(
+					shrink_box(object.box, 2),
+					get_current_options().radius,
+					paint = kn.mix(0.5, style.color.foreground_accent, style.color.foreground),
+				)
 			}
-			kn.add_text(text_layout, box_center(object.box) - text_layout.size * 0.5, paint = style.color.content)
+			kn.add_text(
+				text_layout,
+				box_center(object.box) - text_layout.size * 0.5,
+				paint = style.color.content,
+			)
 		}
 		clicked = .Clicked in object.state.current
 		end_object()
@@ -66,7 +78,7 @@ tab :: proc(text: string, active: bool, loc := #caller_location) -> (clicked: bo
 // 	object.text_layout = kn.make_text(
 // 		text,
 // 		style.default_text_size,
-// 		global_state.style.default_font,
+// 		ctx.style.default_font,
 // 	)
 // 	object.size = object.text_layout.size + {20, 10}
 // 	if begin_object(object.object) {
@@ -78,7 +90,7 @@ tab :: proc(text: string, active: bool, loc := #caller_location) -> (clicked: bo
 
 // display_tab :: proc(object: ^Tab) {
 // 	handle_object_click(object.object)
-// 	if point_in_box(global_state.mouse_pos, object.object.box) {
+// 	if point_in_box(ctx.mouse_pos, object.object.box) {
 // 		hover_object(object.object)
 // 	}
 // 	if .Hovered in object.object.state.current {
@@ -97,8 +109,8 @@ tab :: proc(text: string, active: bool, loc := #caller_location) -> (clicked: bo
 // 		kn.add_box(
 // 			box,
 // 			{
-// 				global_state.style.rounding * object.active_time,
-// 				global_state.style.rounding * object.active_time,
+// 				ctx.style.rounding * object.active_time,
+// 				ctx.style.rounding * object.active_time,
 // 				0,
 // 				0,
 // 			},
@@ -124,12 +136,12 @@ tab :: proc(text: string, active: bool, loc := #caller_location) -> (clicked: bo
 // 			object = object,
 // 		}
 // 	}
-// 	object.metrics.desired_size.y = global_state.style.scale.y
+// 	object.metrics.desired_size.y = ctx.style.scale.y
 // 	for item, i in items {
 // 		object.label_layouts[i] = kn.make_text(
 // 			item,
-// 			global_state.style.default_text_size,
-// 			global_state.style.default_font,
+// 			ctx.style.default_text_size,
+// 			ctx.style.default_font,
 // 		)
 // 	}
 // 	if begin_object(object) {
@@ -146,7 +158,7 @@ tab :: proc(text: string, active: bool, loc := #caller_location) -> (clicked: bo
 
 // 	handle_object_click(object)
 
-// 	if point_in_box(global_state.mouse_pos, object.box) {
+// 	if point_in_box(ctx.mouse_pos, object.box) {
 // 		hover_object(object)
 // 	}
 
@@ -157,14 +169,14 @@ tab :: proc(text: string, active: bool, loc := #caller_location) -> (clicked: bo
 // 	for item, i in object.items {
 // 		option_box := cut_box_left(&inner_box, object.label_layouts[i].size.x)
 // 		hovered :=
-// 			(object.state.current >= {.Hovered}) && point_in_box(global_state.mouse_pos, option_box)
+// 			(object.state.current >= {.Hovered}) && point_in_box(ctx.mouse_pos, option_box)
 // 		if object.index != i {
 // 			if hovered {
 // 				if .Clicked in object.state.current {
 // 					object.index = i
 // 					object.state.current += {.Changed}
 // 				}
-// 				global_state.cursor_type = .Pointing_Hand
+// 				ctx.cursor_type = .Pointing_Hand
 // 			}
 // 		}
 // 		if is_visible {
@@ -190,7 +202,13 @@ Option_Slider_Result :: struct {
 	changed: bool,
 }
 
-option_slider :: proc(items: []string, index: ^$T, loc := #caller_location) -> (result: Option_Slider_Result) {
+option_slider :: proc(
+	items: []string,
+	index: ^$T,
+	loc := #caller_location,
+) -> (
+	result: Option_Slider_Result,
+) {
 	if index == nil {
 		return
 	}
@@ -200,7 +218,7 @@ option_slider :: proc(items: []string, index: ^$T, loc := #caller_location) -> (
 	if begin_object(object) {
 		defer end_object()
 
-		if point_in_box(global_state.mouse_pos, object.box) {
+		if point_in_box(ctx.mouse_pos, object.box) {
 			hover_object(object)
 		}
 
@@ -214,7 +232,7 @@ option_slider :: proc(items: []string, index: ^$T, loc := #caller_location) -> (
 		for item, i in items {
 			option_box := cut_box_left(&inner_box, option_size)
 			hovered :=
-				(object.state.current >= {.Hovered}) && point_in_box(global_state.mouse_pos, option_box)
+				(object.state.current >= {.Hovered}) && point_in_box(ctx.mouse_pos, option_box)
 			if int(index^) != i {
 				if hovered {
 					if .Pressed in object.state.current && index^ != T(i) {
@@ -222,7 +240,7 @@ option_slider :: proc(items: []string, index: ^$T, loc := #caller_location) -> (
 						object.state.current += {.Changed}
 						result.changed = true
 					}
-					global_state.cursor_type = .Pointing_Hand
+					ctx.cursor_type = .Pointing_Hand
 				}
 			}
 			if is_visible {
@@ -252,3 +270,4 @@ option_slider :: proc(items: []string, index: ^$T, loc := #caller_location) -> (
 	}
 	return
 }
+

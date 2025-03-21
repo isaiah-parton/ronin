@@ -1,15 +1,15 @@
 package ronin
 
-import kn "local:katana"
 import "base:intrinsics"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
+import kn "local:katana"
 
 Graph_Tooltip_Entry :: struct {
-	text: kn.Text,
-	color:       kn.Color,
+	text:  kn.Text,
+	color: kn.Color,
 }
 
 Graph_Helper_Dot :: struct {
@@ -53,7 +53,7 @@ begin_graph :: proc(
 		box_size(object.box) / {time_range.y - time_range.x - 1, value_range.y - value_range.x}
 
 	push_clip(object.box)
-	kn.push_scissor(kn.make_box(object.box, global_state.style.rounding))
+	kn.push_scissor(kn.make_box(object.box, ctx.style.rounding))
 
 	grid_offset := [2]f32{time_range.x * -grid_step.x, value_range.x * grid_step.y}
 	grid_size := box_size(object.box)
@@ -91,7 +91,7 @@ begin_graph :: proc(
 	if .Hovered in object.state.current {
 		graph.active_point_index = int(
 			time_range.x +
-			math.round((global_state.mouse_pos.x - (grid_origin.x + grid_offset.x)) / grid_step.x),
+			math.round((ctx.mouse_pos.x - (grid_origin.x + grid_offset.x)) / grid_step.x),
 		)
 	}
 
@@ -165,7 +165,12 @@ end_graph :: proc() -> bool {
 		)
 
 		kn.add_box(tooltip_box, get_current_style().rounding, get_current_style().color.field)
-		kn.add_box_lines(tooltip_box, 1, get_current_style().rounding, get_current_style().color.button)
+		kn.add_box_lines(
+			tooltip_box,
+			1,
+			get_current_style().rounding,
+			get_current_style().color.button,
+		)
 		descent: f32
 		#reverse for &entry, i in graph.tooltip_entries {
 			kn.add_circle(tooltip_box.lo + 10 + {0, tooltip_padding.y + descent}, 3, entry.color)
@@ -173,7 +178,8 @@ end_graph :: proc() -> bool {
 				entry.text,
 				{tooltip_box.hi.x, tooltip_box.lo.y} +
 				{-tooltip_padding.x, tooltip_padding.y} +
-				{0, descent} - {entry.text.size.x, 0},
+				{0, descent} -
+				{entry.text.size.x, 0},
 				paint = get_current_style().color.content,
 			)
 			descent += entry.text.size.y
@@ -211,10 +217,7 @@ curve_line_chart :: proc(
 		)
 		graph.tooltip_size.x = max(graph.tooltip_size.x, text.size.x)
 		graph.tooltip_size.y += text.size.y
-		append(
-			&graph.tooltip_entries,
-			Graph_Tooltip_Entry{text = text, color = color},
-		)
+		append(&graph.tooltip_entries, Graph_Tooltip_Entry{text = text, color = color})
 	}
 	inner_box := object.box
 
@@ -356,7 +359,7 @@ bar_chart :: proc(data: []f32, labels: []string, loc := #caller_location) {
 		PADDING :: 5
 		block_size: f32 = (inner_box.hi.x - inner_box.lo.x) / f32(len(data))
 		tooltip_idx = clamp(
-			int((global_state.mouse_pos.x - object.box.lo.x) / block_size),
+			int((ctx.mouse_pos.x - object.box.lo.x) / block_size),
 			0,
 			len(entries) - 1,
 		)
@@ -510,7 +513,7 @@ bar_chart :: proc(data: []f32, labels: []string, loc := #caller_location) {
 		// 	kn.add_box(blip_box, paint = color)
 		// 	kn.add_string_aligned(
 		// 		field.name,
-		// 		global_state.style.default_font,
+		// 		ctx.style.default_font,
 		// 		18,
 		// 		{tip_box.lo.x, (tip_box.lo.y + tip_box.hi.y) / 2},
 		// 		.Left,
@@ -519,7 +522,7 @@ bar_chart :: proc(data: []f32, labels: []string, loc := #caller_location) {
 		// 	)
 		// 	kn.add_string_aligned(
 		// 		fmt.tprintf("%v", entries[tooltip_idx].values[f]),
-		// 		global_state.style.default_font,
+		// 		ctx.style.default_font,
 		// 		18,
 		// 		{tip_box.hi.x, (tip_box.lo.y + tip_box.hi.y) / 2},
 		// 		.Right,
@@ -537,3 +540,4 @@ bar_chart :: proc(data: []f32, labels: []string, loc := #caller_location) {
 	return true
 }
 */
+

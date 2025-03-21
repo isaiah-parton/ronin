@@ -1,6 +1,5 @@
 package ronin
 
-import kn "local:katana"
 import "base:intrinsics"
 import "core:container/small_array"
 import "core:fmt"
@@ -8,6 +7,7 @@ import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
 import "core:time"
+import kn "local:katana"
 
 Wave_Effects :: small_array.Small_Array(4, Wave_Effect)
 
@@ -24,7 +24,7 @@ draw_and_update_wave_effects :: proc(object: ^Object, array: ^Wave_Effects) {
 		)
 
 		if !(wave.time >= 0.75 && .Pressed in object.state.current && i == array.len - 1) {
-			wave.time += 2.5 * global_state.delta_time
+			wave.time += 2.5 * ctx.delta_time
 		}
 	}
 
@@ -50,15 +50,15 @@ Button :: struct {
 
 Button_Result :: struct {
 	click_count: int,
-	clicked: bool,
-	hovered: bool,
-	pressed: bool,
+	clicked:     bool,
+	hovered:     bool,
+	pressed:     bool,
 }
 
 button :: proc(
 	label: string,
 	accent: Button_Accent = .Normal,
-	font_size: f32 = global_state.style.default_text_size,
+	font_size: f32 = ctx.style.default_text_size,
 	delay: f32 = 0,
 	active: bool = false,
 	is_loading: bool = false,
@@ -79,12 +79,21 @@ button :: proc(
 	kn.set_font(style.bold_font)
 	label_text := kn.make_text(label, font_size, justify = text_align)
 
-	object.size = linalg.ceil((label_text.size + global_state.style.text_padding * 2) / style.scale) * style.scale
+	object.size =
+		linalg.ceil((label_text.size + ctx.style.text_padding * 2) / style.scale) * style.scale
 
 	if begin_object(object) {
 
-		object.animation.hover = animate(object.animation.hover, 0.1, .Hovered in object.state.current)
-		object.animation.press = animate(object.animation.press, 0.08, .Pressed in object.state.current)
+		object.animation.hover = animate(
+			object.animation.hover,
+			0.1,
+			.Hovered in object.state.current,
+		)
+		object.animation.press = animate(
+			object.animation.press,
+			0.08,
+			.Pressed in object.state.current,
+		)
 		extras.hold_time = max(
 			extras.hold_time +
 			delta_time() *
@@ -103,7 +112,7 @@ button :: proc(
 			set_cursor(.Pointing_Hand)
 		}
 
-		if point_in_box(global_state.mouse_pos, object.box) {
+		if point_in_box(ctx.mouse_pos, object.box) {
 			hover_object(object)
 		}
 
@@ -115,7 +124,11 @@ button :: proc(
 
 			switch accent {
 			case .Primary:
-				base_color := kn.mix(0.15 * (object.animation.hover + object.animation.press), style.color.accent, kn.White)
+				base_color := kn.mix(
+					0.15 * (object.animation.hover + object.animation.press),
+					style.color.accent,
+					kn.White,
+				)
 				stroke_color := base_color
 				fill_color := kn.mix(
 					f32(i32(delay > 0)) * object.animation.press,
@@ -152,7 +165,14 @@ button :: proc(
 				kn.add_box(
 					object.box,
 					rounding,
-				paint = kn.fade(color, math.lerp(f32(0.5), f32(0.8), (object.animation.hover + object.animation.press) * 0.5)),
+					paint = kn.fade(
+						color,
+						math.lerp(
+							f32(0.5),
+							f32(0.8),
+							(object.animation.hover + object.animation.press) * 0.5,
+						),
+					),
 				)
 			case .Subtle:
 				kn.add_box(
@@ -160,7 +180,10 @@ button :: proc(
 					rounding,
 					paint = kn.fade(
 						style.color.button,
-						max((object.animation.hover + object.animation.press) * 0.5, f32(i32(active))) *
+						max(
+							(object.animation.hover + object.animation.press) * 0.5,
+							f32(i32(active)),
+						) *
 						0.75,
 					),
 				)
@@ -182,7 +205,8 @@ button :: proc(
 							text_align,
 						),
 						box_center_y(object.box),
-					} - label_text.size * {0, 0.5},
+					} -
+					label_text.size * {0, 0.5},
 					paint = text_color,
 				)
 			}
@@ -321,3 +345,4 @@ floating_button :: proc(
 	return info
 }
 */
+

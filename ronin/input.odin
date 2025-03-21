@@ -71,12 +71,16 @@ Input_Flags :: bit_set[Input_Flag;u8]
 Input_Prefix :: distinct string
 Input_Placeholder :: distinct string
 Input_Format :: distinct string
-Input_Increment_Buttons :: struct {increment_by: f64}
+Input_Increment_Buttons :: struct {
+	increment_by: f64,
+}
 only_if_active :: Input_Flag.Hidden_Unless_Active
 with_multiline :: Input_Flag.Multiline
 with_hidden_content :: Input_Flag.Obfuscated
 undecorated :: Input_Flag.Undecorated
-with_hidden_content_if :: proc(condition: bool) -> Input_Property {return (with_hidden_content if condition else nil)}
+with_hidden_content_if :: proc(condition: bool) -> Input_Property {return(
+		with_hidden_content if condition else nil \
+	)}
 that_selects_all_when_clicked :: Input_Flag.Select_All
 with_prefix :: Input_Prefix
 with_placeholder :: Input_Placeholder
@@ -91,19 +95,10 @@ Input_Property :: union {
 	Input_Flag,
 }
 
-input :: proc(
-	value: any,
-	props: ..Input_Property,
-	loc := #caller_location,
-) -> Input_Result {
+input :: proc(value: any, props: ..Input_Property, loc := #caller_location) -> Input_Result {
 	type_info := runtime.type_info_base(type_info_of(value.id))
 	if pointer_info, ok := type_info.variant.(runtime.Type_Info_Pointer); ok {
-		return raw_input(
-			(^rawptr)(value.data)^,
-			pointer_info.elem,
-			..props,
-			loc = loc,
-		)
+		return raw_input((^rawptr)(value.data)^, pointer_info.elem, ..props, loc = loc)
 	}
 	return raw_input(value.data, type_info, ..props, loc = loc)
 }
@@ -170,11 +165,7 @@ raw_input :: proc(
 		content_string_reader: strings.Reader
 
 		strings.builder_reset(&object.input.builder)
-		fmt.sbprintf(
-			&object.input.builder,
-			format,
-			any{id = type_info.id, data = data},
-		)
+		fmt.sbprintf(&object.input.builder, format, any{id = type_info.id, data = data})
 
 		if .Active in (object.state.current - object.state.previous) {
 			if .Select_All in flags {
@@ -184,8 +175,17 @@ raw_input :: proc(
 
 		if .Obfuscated in flags {
 			strings.reader_init(&content_string_reader, strings.to_string(object.input.builder))
-			content_reader = io.Reader(io.Stream{
-				procedure = proc(data: rawptr, mode: io.Stream_Mode, p: []byte, _: i64, _: io.Seek_From) -> (n: i64, err: io.Error) {
+			content_reader = io.Reader(io.Stream {
+				procedure = proc(
+					data: rawptr,
+					mode: io.Stream_Mode,
+					p: []byte,
+					_: i64,
+					_: io.Seek_From,
+				) -> (
+					n: i64,
+					err: io.Error,
+				) {
 					if mode == .Read {
 						r := (^strings.Reader)(data)
 						nn: int
@@ -197,10 +197,13 @@ raw_input :: proc(
 					}
 					return
 				},
-				data = &content_string_reader
+				data = &content_string_reader,
 			})
 		} else {
-			content_reader = strings.to_reader(&content_string_reader, strings.to_string(object.input.builder))
+			content_reader = strings.to_reader(
+				&content_string_reader,
+				strings.to_string(object.input.builder),
+			)
 		}
 
 
@@ -235,8 +238,8 @@ raw_input :: proc(
 			}
 
 			if .Active in object.state.current {
-				if global_state.last_focused_object != global_state.focused_object &&
-				   global_state.focused_object != object.id &&
+				if ctx.last_focused_object != ctx.focused_object &&
+				   ctx.focused_object != object.id &&
 				   !key_down(.Left_Control) {
 					object.state.current -= {.Active}
 				}
@@ -279,8 +282,8 @@ raw_input :: proc(
 					if key_pressed(.Z) do cmd = .Undo
 					if key_pressed(.Y) do cmd = .Redo
 				}
-				if len(global_state.runes) > 0 {
-					for char, c in global_state.runes {
+				if len(ctx.runes) > 0 {
+					for char, c in ctx.runes {
 						tedit.input_runes(&object.input.editor, {char})
 						draw_frames(1)
 						object.state.current += {.Changed}
@@ -427,10 +430,7 @@ raw_input :: proc(
 							clamp(
 								0.5 +
 								cast(f32)math.sin(
-										time.duration_seconds(
-											time.since(global_state.start_time),
-										) *
-										7,
+										time.duration_seconds(time.since(ctx.start_time)) * 7,
 									) *
 									1.5,
 								0,
@@ -596,3 +596,4 @@ draw_text_highlight :: proc(text: ^kn.Text, origin: [2]f32, color: kn.Color) {
 		}
 	}
 }
+

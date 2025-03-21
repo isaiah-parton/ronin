@@ -119,11 +119,11 @@ Mod_Key :: enum {
 Mod_Keys :: bit_set[Mod_Key]
 
 clean_up_objects :: proc() {
-	for object, index in global_state.objects {
+	for object, index in ctx.objects {
 		if object.dead {
 			destroy_object(object)
-			delete_key(&global_state.object_map, object.id)
-			unordered_remove(&global_state.objects, index)
+			delete_key(&ctx.object_map, object.id)
+			unordered_remove(&ctx.objects, index)
 			free(object)
 			draw_frames(1)
 		} else {
@@ -138,11 +138,11 @@ animate :: proc(value, duration: f32, condition: bool) -> f32 {
 	if condition {
 		if value < 1 {
 			draw_frames(2)
-			value = min(1, value + global_state.delta_time * (1 / duration))
+			value = min(1, value + ctx.delta_time * (1 / duration))
 		}
 	} else if value > 0 {
 		draw_frames(2)
-		value = max(0, value - global_state.delta_time * (1 / duration))
+		value = max(0, value - ctx.delta_time * (1 / duration))
 	}
 
 	return value
@@ -154,36 +154,36 @@ animate_lerp :: proc(value, speed, target: f32) -> f32 {
 	diff := target - value
 	draw_frames(int(abs(diff) > 0.01) * 2)
 
-	value += diff * global_state.delta_time * speed
+	value += diff * ctx.delta_time * speed
 
 	return value
 }
 
 update_object_references :: proc() {
-	if global_state.dragged_object != 0 {
-		global_state.next_hovered_object = global_state.dragged_object
+	if ctx.dragged_object != 0 {
+		ctx.next_hovered_object = ctx.dragged_object
 	}
-	global_state.last_hovered_object = global_state.hovered_object
-	global_state.hovered_object = global_state.next_hovered_object
-	global_state.next_hovered_object = 0
+	ctx.last_hovered_object = ctx.hovered_object
+	ctx.hovered_object = ctx.next_hovered_object
+	ctx.next_hovered_object = 0
 
-	if global_state.mouse_bits - global_state.last_mouse_bits != {} {
-		global_state.next_focused_object = global_state.hovered_object
+	if ctx.mouse_bits - ctx.last_mouse_bits != {} {
+		ctx.next_focused_object = ctx.hovered_object
 	}
 
-	global_state.last_focused_object = global_state.focused_object
-	global_state.focused_object = global_state.next_focused_object
+	ctx.last_focused_object = ctx.focused_object
+	ctx.focused_object = ctx.next_focused_object
 }
 
 get_current_object :: proc() -> (^Object, bool) {
-	if global_state.object_stack.height > 0 {
-		return global_state.object_stack.items[global_state.object_stack.height - 1], true
+	if ctx.object_stack.height > 0 {
+		return ctx.object_stack.items[ctx.object_stack.height - 1], true
 	}
 	return nil, false
 }
 
 last_object :: proc() -> Maybe(^Object) {
-	return global_state.object_stack.items[global_state.object_stack.height]
+	return ctx.object_stack.items[ctx.object_stack.height]
 }
 
 new_object :: proc(id: Id) -> ^Object {
@@ -194,8 +194,8 @@ new_object :: proc(id: Id) -> ^Object {
 	object.id = id
 	object.state.output_mask = OBJECT_STATE_ALL
 
-	append(&global_state.objects, object)
-	global_state.object_map[id] = object
+	append(&ctx.objects, object)
+	ctx.object_map[id] = object
 
 	draw_frames(1)
 
@@ -212,13 +212,13 @@ make_object_children_array :: proc() -> [dynamic]^Object {
 }
 
 get_object :: proc(id: Id) -> ^Object {
-	object := global_state.object_map[id] or_else new_object(id)
+	object := ctx.object_map[id] or_else new_object(id)
 	return object
 }
 
 object_is_visible :: proc(object: ^Object) -> bool {
 	return(
-		global_state.visible &&
+		ctx.visible &&
 		get_clip(get_current_clip(), object.box) != .Full &&
 		(object.box.lo.x < object.box.hi.x || object.box.lo.y < object.box.hi.y) \
 	)
@@ -230,24 +230,24 @@ update_object_state :: proc(o: ^Object) {
 	o.state.current += o.state.next
 	o.state.next = {}
 
-	if global_state.focused_object == o.id {
+	if ctx.focused_object == o.id {
 		o.state.current += {.Focused}
 	}
 
-	// if id, ok := global_state.object_to_activate.?; ok {
+	// if id, ok := ctx.object_to_activate.?; ok {
 	// 	if id == object.id {
 	// 		object.state.current += {.Active}
-	// 		global_state.last_activated_object = object.id
+	// 		ctx.last_activated_object = object.id
 	// 	} else {
 	// 		object.state.current -= {.Active}
 	// 	}
 	// }
 
-	if global_state.hovered_object == o.id {
+	if ctx.hovered_object == o.id {
 		if get_current_options().hover_to_focus {
 			if .Pressed not_in o.state.current {
 				o.click.press_time = time.now()
-				global_state.next_focused_object = o.id
+				ctx.next_focused_object = o.id
 			}
 			o.state.current += {.Pressed}
 			o.click.count = max(o.click.count, 1)
@@ -256,9 +256,9 @@ update_object_state :: proc(o: ^Object) {
 
 		o.state.current += {.Hovered}
 
-		pressed_buttons := global_state.mouse_bits - global_state.last_mouse_bits
+		pressed_buttons := ctx.mouse_bits - ctx.last_mouse_bits
 		if pressed_buttons != {} {
-			if o.click.button == global_state.mouse_button &&
+			if o.click.button == ctx.mouse_button &&
 			   time.since(o.click.release_time) <= MAX_CLICK_DELAY {
 				o.click.count = max((o.click.count + 1) % 4, 1)
 			} else {
@@ -276,16 +276,16 @@ update_object_state :: proc(o: ^Object) {
 				o.click.mods += {.Alt}
 			}
 
-			o.click.button = global_state.mouse_button
-			o.click.point = global_state.mouse_pos
+			o.click.button = ctx.mouse_button
+			o.click.point = ctx.mouse_pos
 			o.click.press_time = time.now()
 
 			o.state.current += {.Pressed}
 			if .Sticky_Hover in o.flags {
-				global_state.dragged_object = o.id
+				ctx.dragged_object = o.id
 			}
-			global_state.next_focused_object = o.id
-			global_state.pressed_object = o.id
+			ctx.next_focused_object = o.id
+			ctx.pressed_object = o.id
 
 			draw_frames(1)
 		}
@@ -295,7 +295,7 @@ update_object_state :: proc(o: ^Object) {
 		// 	object.click_count = 0
 		// }
 	} else {
-		if global_state.dragged_object != o.id {
+		if ctx.dragged_object != o.id {
 			o.state.current -= {.Hovered}
 			o.click.count = 0
 		}
@@ -305,12 +305,12 @@ update_object_state :: proc(o: ^Object) {
 	}
 
 	if o.state.current >= {.Pressed} {
-		released_buttons := global_state.last_mouse_bits - global_state.mouse_bits
+		released_buttons := ctx.last_mouse_bits - ctx.mouse_bits
 		if released_buttons != {} {
 			o.state.current += {.Clicked}
 			o.state.current -= {.Pressed, .Dragged}
 			o.click.release_time = time.now()
-			global_state.dragged_object = 0
+			ctx.dragged_object = 0
 		}
 	}
 }
@@ -318,21 +318,21 @@ update_object_state :: proc(o: ^Object) {
 begin_object :: proc(object: ^Object) -> bool {
 	assert(object != nil)
 
-	object.call_index = global_state.object_index
-	global_state.object_index += 1
+	object.call_index = ctx.object_index
+	ctx.object_index += 1
 	object.dead = false
 
-	if object.frames >= global_state.frames {
+	if object.frames >= ctx.frames {
 		when ODIN_DEBUG {
 			fmt.printfln("Object ID collision: %i", object.id)
 		}
 		return false
 	}
-	object.frames = global_state.frames
+	object.frames = ctx.frames
 
-	if next_box, ok := global_state.next_box.?; ok {
+	if next_box, ok := ctx.next_box.?; ok {
 		object.box = next_box
-		global_state.next_box = nil
+		ctx.next_box = nil
 	} else {
 		current_layout := get_current_layout()
 		object.side = current_layout.side
@@ -346,15 +346,15 @@ begin_object :: proc(object: ^Object) -> bool {
 
 	update_object_state(object)
 
-	if global_state.focus_next {
-		global_state.focus_next = false
+	if ctx.focus_next {
+		ctx.focus_next = false
 		object.state.current += {.Active}
-		global_state.next_focused_object = object.id
+		ctx.next_focused_object = object.id
 	}
 
-	if global_state.disable_objects do object.disabled = true
+	if ctx.disable_objects do object.disabled = true
 
-	push_stack(&global_state.object_stack, object) or_return
+	push_stack(&ctx.object_stack, object) or_return
 
 	return true
 }
@@ -362,7 +362,7 @@ begin_object :: proc(object: ^Object) -> bool {
 end_object :: proc() {
 	if object, ok := get_current_object(); ok {
 		if .Active in (object.state.current - object.state.previous) {
-			global_state.last_activated_object = object.id
+			ctx.last_activated_object = object.id
 		}
 
 		if group, ok := current_group().?; ok {
@@ -372,7 +372,7 @@ end_object :: proc() {
 
 		object.layer.state += object.state.current
 
-		pop_stack(&global_state.object_stack)
+		pop_stack(&ctx.object_stack)
 
 		if parent, ok := get_current_object(); ok {
 			parent.state.current += object_state_output(object.state) & parent.state.input_mask
@@ -406,15 +406,15 @@ lost_state :: proc(state: Object_State) -> Object_Status_Set {
 
 hover_object :: proc(object: ^Object) {
 	if object.disabled do return
-	if object.layer.index < global_state.hovered_layer_index do return
-	if !point_in_box(global_state.mouse_pos, get_current_clip()) do return
-	global_state.next_hovered_object = object.id
-	global_state.next_hovered_layer = object.layer.id
-	global_state.hovered_layer_index = object.layer.index
+	if object.layer.index < ctx.hovered_layer_index do return
+	if !point_in_box(ctx.mouse_pos, get_current_clip()) do return
+	ctx.next_hovered_object = object.id
+	ctx.next_hovered_layer = object.layer.id
+	ctx.hovered_layer_index = object.layer.index
 }
 
 focus_object :: proc(object: ^Object) {
-	global_state.next_focused_object = object.id
+	ctx.next_focused_object = object.id
 }
 
 foreground :: proc(loc := #caller_location) {
@@ -432,7 +432,7 @@ foreground :: proc(loc := #caller_location) {
 			get_current_options().radius,
 			paint = style.color.lines,
 		)
-		if point_in_box(global_state.mouse_pos, object.box) {
+		if point_in_box(ctx.mouse_pos, object.box) {
 			hover_object(object)
 		}
 	}
@@ -452,7 +452,7 @@ background :: proc(loc := #caller_location) {
 			get_current_options().radius,
 			paint = style.color.lines,
 		)
-		if point_in_box(global_state.mouse_pos, object.box) {
+		if point_in_box(ctx.mouse_pos, object.box) {
 			hover_object(object)
 		}
 	}

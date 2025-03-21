@@ -5,7 +5,7 @@ import "core:math/ease"
 import "core:math/linalg"
 
 set_cursor :: proc(type: Mouse_Cursor) {
-	global_state.cursor_type = type
+	ctx.cursor_type = type
 }
 
 // button_behavior :: proc(self: ^Button) {
@@ -22,7 +22,7 @@ set_cursor :: proc(type: Mouse_Cursor) {
 // 	if .Hovered in self.state.current {
 // 		set_cursor(.Pointing_Hand)
 // 	}
-// 	if point_in_box(global_state.mouse_pos, self.box) {
+// 	if point_in_box(ctx.mouse_pos, self.box) {
 // 		hover_object(self)
 // 	}
 // }
@@ -30,9 +30,9 @@ set_cursor :: proc(type: Mouse_Cursor) {
 horizontal_slider_behavior :: proc(object: ^Object) {
 	// object.hover_time = animate(object.hover_time, 0.1, .Hovered in object.state)
 	if .Hovered in object.state.current {
-		global_state.cursor_type = .Resize_EW
+		ctx.cursor_type = .Resize_EW
 	}
-	if point_in_box(global_state.mouse_pos, object.box) {
+	if point_in_box(ctx.mouse_pos, object.box) {
 		hover_object(object)
 	}
 }
@@ -52,20 +52,24 @@ horizontal_slider_behavior :: proc(object: ^Object) {
 // 		.Hovered in object.state,
 // 	)
 // 	if .Hovered in object.state {
-// 		global_state.cursor_type = .Pointing_Hand
+// 		ctx.cursor_type = .Pointing_Hand
 // 	}
-// 	if point_in_box(global_state.mouse_pos, object.box) {
+// 	if point_in_box(ctx.mouse_pos, object.box) {
 // 		hover_object(object)
 // 	}
 // }
 
 get_popup_scale :: proc(size: [2]f32, time: f32) -> f32 {
-	return math.lerp(math.lerp(f32(0.8), f32(1.0), linalg.length(size) / linalg.length(global_state.view)), f32(1.0), time)
+	return math.lerp(
+		math.lerp(f32(0.8), f32(1.0), linalg.length(size) / linalg.length(ctx.view)),
+		f32(1.0),
+		time,
+	)
 }
 
 // get_popup_layer_info :: proc(object: ^Object, size: [2]f32, side: Side = .Bottom) -> (info: Layer_Info) {
 // 	if object == nil do return
-// 	margin := global_state.style.popup_margin
+// 	margin := ctx.style.popup_margin
 // 	view := view_box()
 // 	side := side
 // 	parent := object.box
@@ -122,3 +126,4 @@ get_popup_scale :: proc(size: [2]f32, time: f32) -> f32 {
 
 // 	return
 // }
+

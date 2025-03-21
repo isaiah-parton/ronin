@@ -1,6 +1,5 @@
 package ronin
 
-import kn "local:katana"
 import "base:runtime"
 import "core:fmt"
 import "core:math/linalg"
@@ -8,6 +7,7 @@ import "core:reflect"
 import "core:slice"
 import "core:strings"
 import "core:time"
+import kn "local:katana"
 
 DEBUG :: #config(ONYX_DEBUG, ODIN_DEBUG)
 
@@ -18,8 +18,8 @@ Profiler_Scope :: enum {
 }
 
 Profiler :: struct {
-	t:  [Profiler_Scope]time.Time,
-	d:  [Profiler_Scope]time.Duration,
+	t: [Profiler_Scope]time.Time,
+	d: [Profiler_Scope]time.Duration,
 }
 
 Debug_State :: struct {
@@ -36,7 +36,7 @@ print_object_debug_logs :: proc(object: ^Object) {
 	new_state := object.state.current - object.state.previous
 	old_state := object.state.previous - object.state.current
 	if new_state > {} || old_state > {} {
-		fmt.printf("[%8i] %x \t", global_state.frames, object.id)
+		fmt.printf("[%8i] %x \t", ctx.frames, object.id)
 		if new_state > {} {
 			fmt.print("+{")
 			i := 0
@@ -125,7 +125,7 @@ draw_object_debug_box :: proc(state: Debug_State, object: ^Object) {
 
 @(private)
 draw_object_debug_boxes :: proc(state: Debug_State) {
-	for object in global_state.objects {
+	for object in ctx.objects {
 		draw_object_debug_box(state, object)
 	}
 }
@@ -162,11 +162,11 @@ draw_debug_stuff :: proc(state: ^Debug_State) {
 		state.hovered_object_index = state.top_object_index
 	}
 
-	state.hovered_object_index += int(global_state.mouse_scroll.y)
+	state.hovered_object_index += int(ctx.mouse_scroll.y)
 	state.hovered_object_index = validate_debug_object_index(state^)
 
-	if global_state.hovered_object != 0 {
-		if object, ok := global_state.object_map[global_state.hovered_object]; ok {
+	if ctx.hovered_object != 0 {
+		if object, ok := ctx.object_map[ctx.hovered_object]; ok {
 			kn.add_box_lines(object.box, 1, paint = kn.White)
 		}
 	}
@@ -180,7 +180,7 @@ draw_debug_stuff :: proc(state: ^Debug_State) {
 
 	DEBUG_TEXT_SIZE :: 14
 	kn.set_paint(kn.White)
-	kn.set_font(global_state.style.monospace_font)
+	kn.set_font(ctx.style.monospace_font)
 
 	{
 		total: time.Duration
@@ -206,9 +206,9 @@ draw_debug_stuff :: proc(state: ^Debug_State) {
 		fmt.sbprintf(&b, "\nMatrices: %i", len(kn.renderer().xforms.data))
 		fmt.sbprintf(&b, "\nControl Vertices: %i", len(kn.renderer().cvs.data))
 		fmt.sbprintf(&b, "\nDraw calls: %i", kn.draw_call_count())
-		fmt.sbprintf(&b, "\nObjects: %i", len(global_state.objects))
-		fmt.sbprintf(&b, "\nLayers: %i", len(global_state.layer_array))
-		fmt.sbprintf(&b, "\nPanels: %i", len(global_state.panel_map))
+		fmt.sbprintf(&b, "\nObjects: %i", len(ctx.objects))
+		fmt.sbprintf(&b, "\nLayers: %i", len(ctx.layer_array))
+		fmt.sbprintf(&b, "\nPanels: %i", len(ctx.panel_map))
 		kn.add_string(strings.to_string(b), DEBUG_TEXT_SIZE, 1, paint = kn.Black)
 		kn.add_string(strings.to_string(b), DEBUG_TEXT_SIZE, 0)
 	}
@@ -217,12 +217,12 @@ draw_debug_stuff :: proc(state: ^Debug_State) {
 		text_layout := kn.make_text(
 			fmt.tprintf(
 				"Scroll = Cycle objects\nF3 = Exit debug\nF6 = Turn %s FPS cap\nF7 = Toggle wireframes",
-				"on" if global_state.disable_frame_skip else "off",
+				"on" if ctx.disable_frame_skip else "off",
 			),
 			DEBUG_TEXT_SIZE,
-			font = global_state.style.monospace_font,
+			font = ctx.style.monospace_font,
 		)
-		origin := [2]f32{0, global_state.view.y}
+		origin := [2]f32{0, ctx.view.y}
 		kn.add_text(text_layout, origin - text_layout.size * {0, 1})
 	}
 
@@ -252,15 +252,12 @@ draw_debug_stuff :: proc(state: ^Debug_State) {
 		)
 		info_text_layout := kn.make_text(strings.to_string(b), DEBUG_TEXT_SIZE)
 		size := info_text_layout.size + {0, header_text_layout.size.y}
-		origin := linalg.clamp(mouse_point() + 10, 0, global_state.view - size)
+		origin := linalg.clamp(mouse_point() + 10, 0, ctx.view - size)
 
 		kn.add_box({origin, origin + size}, paint = kn.fade(kn.Black, 0.75))
 		kn.add_box({origin, origin + header_text_layout.size}, paint = kn.Blue)
 		kn.add_text(header_text_layout, origin, paint = kn.Black)
-		kn.add_text(
-			info_text_layout,
-			origin + {0, header_text_layout.size.y},
-			paint = kn.White,
-		)
+		kn.add_text(info_text_layout, origin + {0, header_text_layout.size.y}, paint = kn.White)
 	}
 }
+

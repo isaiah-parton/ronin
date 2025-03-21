@@ -1,10 +1,10 @@
 package ronin
 
-import kn "local:katana"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
+import kn "local:katana"
 
 Boolean_Type :: enum {
 	Checkbox,
@@ -26,7 +26,9 @@ boolean :: proc(
 	text_side: Side = .Left,
 	type: Boolean_Type = .Checkbox,
 	loc := #caller_location,
-) -> (result: Boolean_Result) {
+) -> (
+	result: Boolean_Result,
+) {
 	self := get_object(hash(loc))
 	if self.variant == nil {
 		self.variant = Boolean{}
@@ -46,19 +48,12 @@ boolean :: proc(
 
 	text_layout: kn.Text
 	if len(text) > 0 {
-		text_layout = kn.make_text(
-			text,
-			style.default_text_size,
-			style.default_font,
-		)
+		text_layout = kn.make_text(text, style.default_text_size, style.default_font)
 		if int(text_side) > 1 {
 			self.size.x = max(gadget_size.x, text_layout.size.x)
 			self.size.y = gadget_size.x + text_layout.size.y
 		} else {
-			self.size.x =
-				gadget_size.x +
-				text_layout.size.x +
-				style.text_padding.x * 2
+			self.size.x = gadget_size.x + text_layout.size.x + style.text_padding.x * 2
 			self.size.y = gadget_size.y
 		}
 	} else {
@@ -71,7 +66,7 @@ boolean :: proc(
 		if .Hovered in self.state.current {
 			set_cursor(.Pointing_Hand)
 		}
-		if point_in_box(global_state.mouse_pos, self.box) {
+		if point_in_box(ctx.mouse_pos, self.box) {
 			hover_object(self)
 		}
 		extras.animation_timer = animate(extras.animation_timer, 0.2, value^)
@@ -97,11 +92,7 @@ boolean :: proc(
 			gadget_box := Box{gadget_center - gadget_size / 2, gadget_center + gadget_size / 2}
 
 			if .Hovered in self.state.current {
-				kn.add_box(
-					self.box,
-					style.rounding,
-					kn.fade(style.color.button, 0.2),
-				)
+				kn.add_box(self.box, style.rounding, kn.fade(style.color.button, 0.2))
 			}
 
 			opacity: f32 = 0.5 if self.disabled else 1
@@ -122,7 +113,12 @@ boolean :: proc(
 						box_height(gadget_box) *
 						((1 - state_time) if value^ else -(1 - state_time)),
 					}
-					kn.add_check(gadget_center, gadget_size.y / 4, style.line_width, style.color.content)
+					kn.add_check(
+						gadget_center,
+						gadget_size.y / 4,
+						style.line_width,
+						style.color.content,
+					)
 				}
 				if state_time > 0 && state_time < 1 {
 					kn.pop_scissor()
@@ -131,17 +127,8 @@ boolean :: proc(
 			case .Radio:
 				gadget_center := box_center(gadget_box)
 				radius := gadget_size.y / 2
-				kn.add_circle(
-					gadget_center,
-					radius,
-					style.color.foreground,
-				)
-				kn.add_circle_lines(
-					gadget_center,
-					radius,
-					style.line_width,
-					style.color.lines,
-				)
+				kn.add_circle(gadget_center, radius, style.color.foreground)
+				kn.add_circle_lines(gadget_center, radius, style.line_width, style.color.lines)
 				if state_time > 0 {
 					kn.add_circle(
 						gadget_center,
@@ -159,8 +146,17 @@ boolean :: proc(
 					(box_width(inner_box) - box_height(inner_box)) * state_time,
 					box_center_y(inner_box),
 				}
-				kn.add_box(gadget_box, paint = style.color.button_background, radius = outer_radius)
-				kn.add_box_lines(gadget_box, style.line_width, paint = style.color.lines, radius = outer_radius)
+				kn.add_box(
+					gadget_box,
+					paint = style.color.button_background,
+					radius = outer_radius,
+				)
+				kn.add_box_lines(
+					gadget_box,
+					style.line_width,
+					paint = style.color.lines,
+					radius = outer_radius,
+				)
 				kn.add_circle(
 					lever_center,
 					inner_radius,
@@ -172,15 +168,9 @@ boolean :: proc(
 			if len(text) > 0 {
 				switch text_side {
 				case .Left:
-					text_pos = {
-						gadget_box.hi.x + style.text_padding.x,
-						box_center_y(self.box),
-					}
+					text_pos = {gadget_box.hi.x + style.text_padding.x, box_center_y(self.box)}
 				case .Right:
-					text_pos = {
-						gadget_box.lo.x - style.text_padding.x,
-						box_center_y(self.box),
-					}
+					text_pos = {gadget_box.lo.x - style.text_padding.x, box_center_y(self.box)}
 				case .Top:
 					text_pos = self.box.lo
 				case .Bottom:
@@ -201,3 +191,4 @@ boolean :: proc(
 	}
 	return
 }
+

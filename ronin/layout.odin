@@ -10,12 +10,12 @@ Layout :: struct {
 	box:            Box,
 	bounds:         Box,
 	side:           Side,
-	is_dynamic:      bool,
-	is_root:      bool,
+	is_dynamic:     bool,
+	is_root:        bool,
 	show_wireframe: bool,
 	spacing_size:   [2]f32,
 	content_size:   [2]f32,
-	desired_size: [2]f32,
+	desired_size:   [2]f32,
 	cut_side:       Side,
 }
 
@@ -34,7 +34,7 @@ Layout_Property :: union {
 }
 
 Box_Cut :: struct {
-	side: Side,
+	side:   Side,
 	amount: f32,
 }
 
@@ -44,15 +44,15 @@ Layout_Placement :: union {
 }
 
 Layout_Descriptor :: struct {
-	options: Options,
-	margin: [4]f32,
-	padding: [4]f32,
-	placement: Layout_Placement,
-	size_is_desired: bool,
-	is_dynamic: bool,
+	options:                Options,
+	margin:                 [4]f32,
+	padding:                [4]f32,
+	placement:              Layout_Placement,
+	size_is_desired:        bool,
+	is_dynamic:             bool,
 	cut_contents_from_side: Side,
-	content_size_option: Size_Option,
-	is_root: bool,
+	content_size_option:    Size_Option,
+	is_root:                bool,
 }
 
 make_layout_descriptor :: proc(props: ..Layout_Property) -> Layout_Descriptor {
@@ -64,7 +64,10 @@ make_layout_descriptor :: proc(props: ..Layout_Property) -> Layout_Descriptor {
 		case Cut_From_Side:
 			side := Side(v)
 			axis := int(side) / 2
-			desc.placement = Box_Cut{side = side, amount = solve_size(desc.options.size[axis], 0, desc.options.methods[axis])}
+			desc.placement = Box_Cut {
+				side   = side,
+				amount = solve_size(desc.options.size[axis], 0, desc.options.methods[axis]),
+			}
 			if desc.options.methods[axis] in (bit_set[Size_Method])({.Fixed}) {
 				desc.size_is_desired = true
 			}
@@ -90,22 +93,22 @@ make_layout_descriptor :: proc(props: ..Layout_Property) -> Layout_Descriptor {
 }
 
 get_current_layout :: proc() -> ^Layout {
-	assert(global_state.layout_stack.height > 0)
-	return &global_state.layout_stack.items[global_state.layout_stack.height - 1]
+	assert(ctx.layout_stack.height > 0)
+	return &ctx.layout_stack.items[ctx.layout_stack.height - 1]
 }
 
 push_layout :: proc(layout: Layout) -> bool {
-	return push_stack(&global_state.layout_stack, layout)
+	return push_stack(&ctx.layout_stack, layout)
 }
 
 pop_layout :: proc() {
-	pop_stack(&global_state.layout_stack)
+	pop_stack(&ctx.layout_stack)
 }
 
 next_user_defined_box :: proc() -> (box: Box, ok: bool) {
-	box, ok = global_state.next_box.?
+	box, ok = ctx.next_box.?
 	if ok {
-		global_state.next_box = nil
+		ctx.next_box = nil
 	}
 	return
 }
@@ -144,11 +147,11 @@ place_object_in_layout :: proc(object: ^Object, layout: ^Layout) -> Box {
 	axis := int(layout.side) / 2
 	axis2 := 1 - axis
 
-	actual_size := [2]f32{
+	actual_size := [2]f32 {
 		solve_size(options.size.x, object.size.x, options.methods.x),
-		solve_size(options.size.y, object.size.y, options.methods.y)
+		solve_size(options.size.y, object.size.y, options.methods.y),
 	}
-	desired_size := [2]f32{
+	desired_size := [2]f32 {
 		solve_desired_size(options.size.x, object.size.x, options.methods.x),
 		solve_desired_size(options.size.y, object.size.y, options.methods.y),
 	}
@@ -172,7 +175,7 @@ place_object_in_layout :: proc(object: ^Object, layout: ^Layout) -> Box {
 		layout.content_size.x += desired_size.x
 	}
 
-	for i in 0..=1 {
+	for i in 0 ..= 1 {
 		if options.unlocked[i] {
 			floating_size := max(object.size[i], options.size[i])
 			box.lo[i] = math.lerp(box.lo[i], box.hi[i] - floating_size, options.align[i])
@@ -219,7 +222,10 @@ begin_layout :: proc(props: ..Layout_Property) -> bool {
 		layout.cut_side = v.side
 	case nil:
 		axis := int(current_layout.side) / 2
-		cut := Box_Cut{side = current_layout.side, amount = solve_size(desc.options.size[axis], 0, desc.options.methods[axis])}
+		cut := Box_Cut {
+			side   = current_layout.side,
+			amount = solve_size(desc.options.size[axis], 0, desc.options.methods[axis]),
+		}
 		if current_layout.is_dynamic {
 			current_layout.box = grow_side_of_box(current_layout.box, cut.side, cut.amount)
 		}
@@ -297,7 +303,7 @@ space :: proc(factor: f32 = 1) {
 }
 
 set_next_box :: proc(box: Box) {
-	global_state.next_box = box
+	ctx.next_box = box
 }
 
 set_padding :: proc(padding: [4]f32) {
@@ -312,3 +318,4 @@ remaining_space :: proc() -> [2]f32 {
 set_align :: proc(align: [2]f32) {
 	get_current_options().align = align
 }
+
