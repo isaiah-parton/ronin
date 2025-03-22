@@ -119,12 +119,12 @@ Mod_Key :: enum {
 Mod_Keys :: bit_set[Mod_Key]
 
 clean_up_objects :: proc() {
-	for object, index in ctx.objects {
+	for &object, index in ctx.objects {
+		object := (&object.?) or_continue
 		if object.dead {
 			destroy_object(object)
 			delete_key(&ctx.object_map, object.id)
-			unordered_remove(&ctx.objects, index)
-			free(object)
+			(^Maybe(Object))(object)^ = nil
 			draw_frames(1)
 		} else {
 			object.dead = true
@@ -187,14 +187,19 @@ last_object :: proc() -> Maybe(^Object) {
 }
 
 new_object :: proc(id: Id) -> ^Object {
-	object := new(Object)
-
+	object: ^Object
+	for &slot in ctx.objects {
+		if slot == nil {
+			slot = Object {
+				id = id,
+				state = {output_mask = OBJECT_STATE_ALL},
+			}
+			object = (^Object)(&slot)
+			break
+		}
+	}
 	assert(object != nil)
 
-	object.id = id
-	object.state.output_mask = OBJECT_STATE_ALL
-
-	append(&ctx.objects, object)
 	ctx.object_map[id] = object
 
 	draw_frames(1)

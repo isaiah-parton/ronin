@@ -91,7 +91,7 @@ Context :: struct {
 	frames_so_far:            int,
 	frames_this_second:       int,
 	id_stack:                 Stack(Id, MAX_IDS),
-	objects:                  [dynamic]^Object,
+	objects:                  [2048]Maybe(Object),
 	object_map:               map[Id]^Object,
 	object_stack:             Stack(^Object, 128),
 	object_index:             int,
@@ -521,9 +521,11 @@ cycle_object_active :: proc(increment: int = 1) {
 	objects: [dynamic]^Object
 	defer delete(objects)
 
-	for object in ctx.objects {
-		if .Is_Input in object.flags {
-			append(&objects, object)
+	for &object in ctx.objects {
+		if object, ok := &object.?; ok {
+			if .Is_Input in object.flags {
+				append(&objects, object)
+			}
 		}
 	}
 
@@ -583,9 +585,10 @@ shutdown :: proc() {
 	}
 
 	for &object in ctx.objects {
-		destroy_object(object)
+		if object, ok := &object.?; ok {
+			destroy_object(object)
+		}
 	}
-	delete(ctx.objects)
 	delete(ctx.object_map)
 
 	for layer in ctx.layer_array {

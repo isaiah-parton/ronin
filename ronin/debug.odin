@@ -125,7 +125,8 @@ draw_object_debug_box :: proc(state: Debug_State, object: ^Object) {
 
 @(private)
 draw_object_debug_boxes :: proc(state: Debug_State) {
-	for object in ctx.objects {
+	for &object in ctx.objects {
+		object := (&object.?) or_continue
 		draw_object_debug_box(state, object)
 	}
 }
