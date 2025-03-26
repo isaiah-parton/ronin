@@ -206,7 +206,6 @@ raw_input :: proc(
 			)
 		}
 
-
 		kn.set_font(text_font)
 
 		text_origin: [2]f32
@@ -255,20 +254,18 @@ raw_input :: proc(
 
 			if is_visible {
 				content_text = kn.make_selectable(
-					kn.make_text_with_reader(
-						content_reader,
-						text_size,
-						selection = object.input.editor.selection,
-					),
+					kn.make_text_with_reader(content_reader, text_size),
 					mouse_point() - text_origin,
+					min(object.input.editor.selection.x, object.input.editor.selection.y),
+					max(object.input.editor.selection.x, object.input.editor.selection.y),
 				)
 			}
 
 			if .Pressed not_in object.state.current &&
-			   object.input.last_mouse_index != content_text.selection.index {
+			   object.input.last_mouse_index != content_text.contact.index {
 				object.click.count = 0
 			}
-			object.input.last_mouse_index = content_text.selection.index
+			object.input.last_mouse_index = content_text.contact.index
 
 			if .Active in object.state.current {
 				cmd: tedit.Command
@@ -355,7 +352,7 @@ raw_input :: proc(
 			text_mouse_selection(object, strings.to_string(object.input.builder), &content_text)
 
 			if .Active in object.state.previous && len(content_text.glyphs) > 0 {
-				glyph := content_text.glyphs[content_text.selection_glyphs[0]]
+				glyph := content_text.glyphs[content_text.selection.first_glyph]
 				glyph_pos := (text_origin - object.input.offset) + glyph.offset
 				cursor_box := Box {
 					glyph_pos + {0, -2},
@@ -423,7 +420,7 @@ raw_input :: proc(
 				if .Active in object.state.previous {
 					draw_frames(1)
 					draw_text_layout_cursor(
-						content_text,
+						&content_text,
 						text_origin,
 						kn.fade(
 							style.color.accent,
@@ -552,12 +549,12 @@ replace_input_content :: proc(
 	return true
 }
 
-draw_text_layout_cursor :: proc(layout: kn.Text, origin: [2]f32, color: kn.Color) {
-	if len(layout.glyphs) == 0 {
+draw_text_layout_cursor :: proc(text: ^kn.Selectable_Text, origin: [2]f32, color: kn.Color) {
+	if len(text.glyphs) == 0 {
 		return
 	}
-	line_height := layout.font.line_height * layout.font_scale
-	cursor_origin := origin + layout.glyphs[layout.selection_glyphs[0]].offset
+	line_height := text.font.line_height * text.font_scale
+	cursor_origin := origin + text.glyphs[text.selection.first_glyph].offset
 	kn.add_box(
 		snapped_box(
 			{
@@ -569,31 +566,31 @@ draw_text_layout_cursor :: proc(layout: kn.Text, origin: [2]f32, color: kn.Color
 	)
 }
 
-draw_text_highlight :: proc(text: ^kn.Text, origin: [2]f32, color: kn.Color) {
-	if text.selection_glyphs[0] == text.selection_glyphs[1] {
+draw_text_highlight :: proc(text: ^kn.Selectable_Text, origin: [2]f32, color: kn.Color) {
+	if text.selection.first_glyph == text.selection.last_glyph {
 		return
 	}
 	line_height := text.font.line_height * text.font_scale
-	for &line, i in text.lines {
-		selection_range := to_ordered_range(text.selection_glyphs)
+	for &line in text.lines {
 		highlight_range := [2]int {
-			max(selection_range.x, line.glyph_range.x),
-			min(selection_range.y, line.glyph_range.y),
+			max(text.selection.first_glyph, line.first_glyph),
+			min(text.selection.last_glyph, line.last_glyph),
 		}
-		if highlight_range.x < highlight_range.y {
-			box := Box {
-				origin + text.glyphs[highlight_range.x].offset,
-				origin +
-				text.glyphs[highlight_range.y].offset +
-				{
-						text.font.space_advance *
-						text.font_scale *
-						f32(i32(selection_range.y > line.glyph_range.y)),
-						line_height,
-					},
-			}
-			kn.add_box(snapped_box(box), paint = color)
+		if highlight_range.x > highlight_range.y {
+			continue
 		}
+		box := Box {
+			origin + text.glyphs[highlight_range.x].offset,
+			origin +
+			text.glyphs[highlight_range.y].offset +
+			{
+					text.font.space_advance *
+					text.font_scale *
+					f32(i32(text.selection.last_glyph > line.last_glyph)),
+					line_height,
+				},
+		}
+		kn.add_box(snapped_box(box), paint = color)
 	}
 }
 

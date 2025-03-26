@@ -498,12 +498,13 @@ main :: proc() {
 				kn.add_box(box, paint = get_current_style().color.background)
 			}
 
-			if do_panel(with_size(300)) {
-				shrink(get_current_style().scale)
-				set_width(to_scale(10))
-				button("i'm a panel")
-				button("\ue4e7", accent = .Subtle)
-			}
+			// if do_panel(with_size(300)) {
+			// 	shrink(get_current_style().scale)
+			// 	set_width(to_scale(10))
+			// 	button("i'm a panel")
+			// 	button("\ue4e7", accent = .Subtle)
+			// 	input(&state.input_section.text)
+			// }
 
 			// example_browser(&state)
 			set_size(to_layout_size)
@@ -511,13 +512,15 @@ main :: proc() {
 				if do_page(as_column) {
 					if do_layout(
 						as_column,
-						center_contents,
+						// center_contents,
 						with_box(align_box_inside(get_current_layout().box, 200, 0.5)),
 					) {
 						set_size(that_of_object)
-						set_axis_locks(false, true)
+						// set_axis_locks(false, true)
+						label("Ronin")
 						h1("Ronin")
-						text("while (1) {fork()};", font = get_current_style().monospace_font)
+						do_text(FILLER_TEXT)
+						input(&state.input_section.text)
 						space()
 						set_width(to_scale(8))
 						if button("Continue\ue391").clicked {

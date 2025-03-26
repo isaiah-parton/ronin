@@ -1,5 +1,6 @@
 package ronin
 
+import "base:runtime"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
@@ -56,7 +57,7 @@ point_inside_text :: proc(point: [2]f32, origin: [2]f32, text: kn.Text) -> bool 
 	return false
 }
 
-text :: proc(
+do_text :: proc(
 	content: string,
 	font_size := ctx.style.default_text_size,
 	font := ctx.style.default_font,
@@ -67,21 +68,19 @@ text :: proc(
 	self := get_object(hash(loc))
 	self.flags += {.Sticky_Hover, .Sticky_Press}
 	layout := get_current_layout()
-	text := kn.make_text(
-		content,
-		font_size,
-		font,
-		max_size = box_size(layout.box),
-		wrap = .Word,
-		selection = self.input.editor.selection,
-	)
+	text := kn.make_text(content, font_size, font, max_size = box_size(layout.box), wrap = .Words)
 	self.size = text.size
 	if do_object(self) {
 		if object_is_visible(self) {
 			style := get_current_style()
 			text_origin := self.box.lo
-			text := kn.make_selectable(text, mouse_point() - text_origin)
-			if text.selection.valid {
+			text := kn.make_selectable(
+				text,
+				mouse_point() - text_origin,
+				min(self.input.editor.selection[0], self.input.editor.selection[1]),
+				max(self.input.editor.selection[0], self.input.editor.selection[1]),
+			)
+			if text.contact.valid {
 				hover_object(self)
 			}
 			if .Pressed in self.state.current {
@@ -112,26 +111,26 @@ label :: proc(
 	color: kn.Color = get_current_style().color.content,
 	loc := #caller_location,
 ) {
-	text_layout := kn.make_text(text, font_size, font)
+	text := kn.make_text(text, font_size, font)
 	self := get_object(hash(loc))
-	self.size = text_layout.size
+	self.size = text.size
 	self.size_is_fixed = true
-	if begin_object(self) {
+	if do_object(self) {
 		if object_is_visible(self) {
 			if point_in_box(mouse_point(), self.box) {
 				hover_object(self)
 			}
-			kn.add_text(text_layout, self.box.lo, paint = color)
+			kn.add_text(text, self.box.lo, paint = color)
 		}
-		end_object()
 	}
 }
 
-h1 :: proc(content: string) {
-	text(
+h1 :: proc(content: string, loc := #caller_location) {
+	do_text(
 		content,
 		font_size = ctx.style.header_text_size,
 		font = ctx.style.header_font.? or_else ctx.style.default_font,
+		loc = loc,
 	)
 }
 
@@ -160,22 +159,22 @@ text_mouse_selection :: proc(object: ^Object, data: string, text: ^kn.Selectable
 	}
 
 	last_selection := object.input.editor.selection
-	if .Pressed in object.state.current && text.selection.index >= 0 {
+	if .Pressed in object.state.current && text.contact.index >= 0 {
 		if .Pressed not_in object.state.previous {
-			object.input.anchor = text.selection.index
+			object.input.anchor = text.contact.index
 			if object.click.count == 3 {
 				object.input.editor.selection = {len(data), 0}
 				// tedit.editor_execute(&object.input.editor, .Select_All)
 			} else {
-				object.input.editor.selection = {text.selection.index, text.selection.index}
+				object.input.editor.selection = {text.contact.index, text.contact.index}
 			}
 		}
 		switch object.click.count {
 		case 2:
-			allow_precision := text.selection.index != object.input.anchor
-			if text.selection.index <= object.input.anchor {
+			allow_precision := text.contact.index != object.input.anchor
+			if text.contact.index <= object.input.anchor {
 				object.input.editor.selection[0] =
-					text.selection.index if (allow_precision && is_separator(rune(data[text.selection.index]))) else max(0, strings.last_index_proc(data[:text.selection.index], is_separator) + 1)
+					text.contact.index if (allow_precision && is_separator(rune(data[text.contact.index]))) else max(0, strings.last_index_proc(data[:min(text.contact.index, len(data))], is_separator) + 1)
 				object.input.editor.selection[1] = strings.index_proc(
 					data[object.input.anchor:],
 					is_separator,
@@ -192,15 +191,15 @@ text_mouse_selection :: proc(object: ^Object, data: string, text: ^kn.Selectable
 				)
 				// `text.selection.index - 1` is safe as long as `text.selection.index > object.input.anchor`
 				object.input.editor.selection[0] =
-					0 if (allow_precision && is_separator(rune(data[text.selection.index - 1]))) else strings.index_proc(data[text.selection.index:], is_separator)
+					0 if (allow_precision && is_separator(rune(data[text.contact.index - 1]))) else strings.index_proc(data[text.contact.index:], is_separator)
 				if object.input.editor.selection[0] == -1 {
 					object.input.editor.selection[0] = len(data)
 				} else {
-					object.input.editor.selection[0] += text.selection.index
+					object.input.editor.selection[0] += text.contact.index
 				}
 			}
 		case 1:
-			object.input.editor.selection[0] = text.selection.index
+			object.input.editor.selection[0] = text.contact.index
 		}
 	}
 }

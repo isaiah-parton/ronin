@@ -1,21 +1,21 @@
 package demo
 
-import "local:ronin"
-import kn "local:katana"
 import "core:encoding/json"
-import "core:os"
 import "core:fmt"
-import "core:strings"
 import "core:math"
 import "core:math/linalg"
+import "core:os"
+import "core:strings"
+import kn "local:katana"
+import "local:ronin"
 
 Icon_Section_State :: struct {
-	query: string,
-	shown_icons: [dynamic]rune,
-	selected_icon: rune,
+	query:             string,
+	shown_icons:       [dynamic]rune,
+	selected_icon:     rune,
 	loaded_icon_names: bool,
-	icon_names: []string,
-	display_size: f32,
+	icon_names:        []string,
+	display_size:      f32,
 }
 
 destroy_icon_section_state :: proc(state: ^Icon_Section_State) {
@@ -64,8 +64,12 @@ icon_section :: proc(state: ^Icon_Section_State) {
 			shrink(style.scale * 1)
 			set_padding(0)
 			set_width(to_scale(10))
-			if input(&state.query, with_placeholder("Search for icons")).changed || len(state.shown_icons) == 0 {
-				lowercase_query := strings.to_lower(state.query, allocator = context.temp_allocator)
+			if input(&state.query, with_placeholder("Search for icons")).changed ||
+			   len(state.shown_icons) == 0 {
+				lowercase_query := strings.to_lower(
+					state.query,
+					allocator = context.temp_allocator,
+				)
 				clear(&state.shown_icons)
 				for name, i in state.icon_names {
 					if strings.contains(name, lowercase_query) {
@@ -76,7 +80,13 @@ icon_section :: proc(state: ^Icon_Section_State) {
 			space()
 			set_align(0.5)
 			if len(state.query) > 0 {
-				label(fmt.tprintf("Showing %i/%i icons", len(state.shown_icons), int(last_icon - first_icon) + 1))
+				label(
+					fmt.tprintf(
+						"Showing %i/%i icons",
+						len(state.shown_icons),
+						int(last_icon - first_icon) + 1,
+					),
+				)
 			}
 		}
 		divider()
@@ -98,7 +108,13 @@ icon_section :: proc(state: ^Icon_Section_State) {
 					space()
 					slider(&state.display_size, 20, 80)
 					space()
-					text(fmt.tprintf("%s\n\\u%x", state.icon_names[int(state.selected_icon - first_icon)], state.selected_icon))
+					do_text(
+						fmt.tprintf(
+							"%s\n\\u%x",
+							state.icon_names[int(state.selected_icon - first_icon)],
+							state.selected_icon,
+						),
+					)
 				}
 			}
 			divider()
@@ -111,7 +127,11 @@ icon_section :: proc(state: ^Icon_Section_State) {
 			set_size(to_layout_size)
 			if do_container() {
 				if container_object, ok := get_current_object(); ok {
-					kn.add_box(container_object.box, style.rounding, paint = style.color.background)
+					kn.add_box(
+						container_object.box,
+						style.rounding,
+						paint = style.color.background,
+					)
 					defer kn.add_box_lines(
 						container_object.box,
 						style.line_width,
@@ -122,7 +142,7 @@ icon_section :: proc(state: ^Icon_Section_State) {
 					shrink(6)
 
 					set_height(exactly(icon_cell_size))
-					for i in 0..<how_many_rows {
+					for i in 0 ..< how_many_rows {
 						begin_layout(on_top, as_row) or_continue
 						defer end_layout()
 
@@ -131,7 +151,8 @@ icon_section :: proc(state: ^Icon_Section_State) {
 						}
 
 						set_width(exactly(icon_cell_size))
-						for j in (i * how_many_columns)..<min((i + 1) * how_many_columns, how_many_icons) {
+						for j in (i *
+							how_many_columns) ..< min((i + 1) * how_many_columns, how_many_icons) {
 							icon := state.shown_icons[j]
 
 							object := get_object(hash(int(icon)))
@@ -142,7 +163,7 @@ icon_section :: proc(state: ^Icon_Section_State) {
 
 							if object_is_visible(object) {
 								object.animation.hover = animate(
-								object.animation.hover,
+									object.animation.hover,
 									0.1,
 									.Hovered in object.state.current,
 								)
@@ -164,14 +185,15 @@ icon_section :: proc(state: ^Icon_Section_State) {
 									style.rounding,
 									kn.fade(style.color.lines, object.animation.hover),
 								)
-								size := icon_size// * (1.0 + 0.2 * object.hover_time)
+								size := icon_size // * (1.0 + 0.2 * object.hover_time)
 								font := style.icon_font
-								if glyph, ok := kn.get_font_glyph(font, icon);
-								   ok {
+								if glyph, ok := kn.get_font_glyph(font, icon); ok {
 									kn.add_glyph(
 										glyph,
 										size,
-										linalg.floor(box_center(object.box)) - size / 2 + {0, -size * (font.line_height - font.ascend)},
+										linalg.floor(box_center(object.box)) -
+										size / 2 +
+										{0, -size * (font.line_height - font.ascend)},
 										paint = style.color.content,
 									)
 								}
@@ -183,3 +205,4 @@ icon_section :: proc(state: ^Icon_Section_State) {
 		}
 	}
 }
+
