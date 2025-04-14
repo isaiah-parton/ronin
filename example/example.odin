@@ -464,8 +464,13 @@ main :: proc() {
 	}
 
 	glfw.Init()
+
+	when ODIN_OS == .Windows {
+		assert(glfw.VulkanSupported() == true)
+	}
 	defer glfw.Terminate()
 
+	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
 	window := glfw.CreateWindow(1400, 800, "demo", nil, nil)
 	defer glfw.DestroyWindow(window)
 

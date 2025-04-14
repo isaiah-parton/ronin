@@ -77,11 +77,7 @@ Context :: struct {
 	debug:                    Debug_State,
 	view:                     [2]f32,
 	desired_fps:              int,
-	instance:                 wgpu.Instance,
-	device:                   wgpu.Device,
-	adapter:                  wgpu.Adapter,
-	surface:                  wgpu.Surface,
-	surface_config:           wgpu.SurfaceConfiguration,
+	platform:                 kn.Platform,
 	disable_frame_skip:       bool,
 	delta_time:               f32,
 	last_frame_time:          time.Time,
@@ -271,9 +267,9 @@ start :: proc(window: glfw.WindowHandle, style: Maybe(Style) = nil) -> bool {
 		width := max(width, 1)
 		height := max(height, 1)
 
-		ctx.surface_config.width = u32(width)
-		ctx.surface_config.height = u32(height)
-		wgpu.SurfaceConfigure(ctx.surface, &ctx.surface_config)
+		ctx.platform.surface_config.width = u32(width)
+		ctx.platform.surface_config.height = u32(height)
+		wgpu.SurfaceConfigure(ctx.platform.surface, &ctx.platform.surface_config)
 
 		ctx.view = {f32(width), f32(height)}
 		draw_frames(1)
@@ -322,71 +318,9 @@ start :: proc(window: glfw.WindowHandle, style: Maybe(Style) = nil) -> bool {
 		},
 	)
 
-	ctx.instance = wgpu.CreateInstance()
-	ctx.surface = glfwglue.GetSurface(ctx.instance, window)
+	ctx.platform = kn.make_platform_glfwglue(ctx.window)
 
-	on_device :: proc "c" (
-		status: wgpu.RequestDeviceStatus,
-		device: wgpu.Device,
-		message: string,
-		userdata1: rawptr,
-		userdata2: rawptr,
-	) {
-		context = runtime.default_context()
-		switch status {
-		case .InstanceDropped:
-			panic("WGPU instance dropped!")
-		case .Success:
-			(^Context)(userdata1).device = device
-		case .Error:
-			fmt.panicf("Unable to aquire device: %s", message)
-		case .Unknown:
-			panic("Unknown error")
-		}
-	}
-
-	on_adapter :: proc "c" (
-		status: wgpu.RequestAdapterStatus,
-		adapter: wgpu.Adapter,
-		message: string,
-		userdata1: rawptr,
-		userdata2: rawptr,
-	) {
-		context = runtime.default_context()
-		switch status {
-		case .InstanceDropped:
-			panic("WGPU instance dropped!")
-		case .Success:
-			(^Context)(userdata1).adapter = adapter
-			if info, status := wgpu.AdapterGetInfo(adapter); status == .Success {
-				fmt.printfln("Using %v on %v", info.backendType, info.description)
-			}
-			descriptor := kn.device_descriptor()
-			wgpu.AdapterRequestDevice(
-				adapter,
-				&descriptor,
-				{callback = on_device, userdata1 = userdata1},
-			)
-		case .Error:
-			fmt.panicf("Unable to acquire adapter: %s", message)
-		case .Unavailable:
-			panic("Adapter unavailable")
-		case .Unknown:
-			panic("Unknown error")
-		}
-	}
-
-	wgpu.InstanceRequestAdapter(
-		ctx.instance,
-		&{powerPreference = .LowPower},
-		{callback = on_adapter, userdata1 = &ctx},
-	)
-	ctx.surface_config, _ = kn.surface_configuration(ctx.device, ctx.adapter, ctx.surface)
-	ctx.surface_config.width = u32(width)
-	ctx.surface_config.height = u32(height)
-	wgpu.SurfaceConfigure(ctx.surface, &ctx.surface_config)
-
-	kn.start(ctx.device, ctx.surface)
+	kn.start_on_platform(ctx.platform)
 
 	if style == nil {
 		ctx.style.color = dark_color_scheme()
@@ -611,6 +545,8 @@ shutdown :: proc() {
 	destroy_debug_state(&ctx.debug)
 
 	kn.shutdown()
+
+	kn.destroy_platform(&ctx.platform)
 }
 
 delta_time :: proc() -> f32 {
