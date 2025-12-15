@@ -1,12 +1,12 @@
 package ronin
 
+import kn "../katana"
 import "base:runtime"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:strings"
 import "core:unicode"
-import kn "local:katana"
 import "tedit"
 
 Text_Content_Builder :: struct {
@@ -77,8 +77,10 @@ do_text :: proc(
 			text := kn.make_selectable(
 				text,
 				mouse_point() - text_origin,
-				min(self.input.editor.selection[0], self.input.editor.selection[1]),
-				max(self.input.editor.selection[0], self.input.editor.selection[1]),
+				{
+					min(self.input.editor.selection[0], self.input.editor.selection[1]),
+					max(self.input.editor.selection[0], self.input.editor.selection[1]),
+				},
 			)
 			if text.contact.valid {
 				hover_object(self)
@@ -137,7 +139,7 @@ h1 :: proc(content: string, loc := #caller_location) {
 icon :: proc(which_one: rune, size: f32 = ctx.style.icon_size, loc := #caller_location) {
 	style := get_current_style()
 	font := style.icon_font
-	if glyph, ok := kn.get_font_glyph(font, which_one); ok {
+	if glyph, ok := kn.get_font_glyph(&font, which_one); ok {
 		self := get_object(hash(loc))
 		self.size = {glyph.advance * size, font.line_height * size}
 		if do_object(self) {

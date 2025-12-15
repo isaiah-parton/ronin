@@ -1,10 +1,10 @@
 package ronin
 
+import kn "../katana"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
-import kn "local:katana"
 
 Boolean_Type :: enum {
 	Checkbox,
@@ -99,7 +99,7 @@ boolean :: proc(
 
 			state_time := ease.quadratic_in_out(extras.animation_timer)
 			gadget_fill_color := style.color.accent
-			gadget_accent_color := kn.mix(0.4, gadget_fill_color, kn.Black)
+			gadget_accent_color := kn.mix(0.4, gadget_fill_color, kn.BLACK)
 
 			switch type {
 			case .Checkbox:

@@ -1,10 +1,10 @@
 package ronin
 
+import kn "../katana"
 import "base:runtime"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
-import kn "local:katana"
 
 Layout :: struct {
 	box:            Box,

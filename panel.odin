@@ -1,9 +1,9 @@
 package ronin
 
+import kn "../katana"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
-import kn "local:katana"
 
 Panel :: struct {
 	layer:                  ^Layer,

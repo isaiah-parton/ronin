@@ -1,10 +1,10 @@
 package ronin
 
+import kn "../katana"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:slice"
-import kn "local:katana"
 
 tab :: proc(text: string, active: bool, loc := #caller_location) -> (clicked: bool) {
 	object := get_object(hash(loc))

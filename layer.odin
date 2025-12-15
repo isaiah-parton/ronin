@@ -8,12 +8,12 @@ package ronin
 //
 // All layers are stored contiguously in the order they are to be rendered
 // a layer's index is an important value and must always be valid
+import kn "../katana"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
 import "core:slice"
-import kn "local:katana"
 
 Layer_Sort_Method :: enum {
 	Back,

@@ -1,11 +1,11 @@
 package ronin
 
+import kn "../katana"
 import "base:intrinsics"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
-import kn "local:katana"
 
 Graph_Tooltip_Entry :: struct {
 	text:  kn.Text,

@@ -1,11 +1,11 @@
 package ronin
 
+import kn "../katana"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
 import "core:time"
-import kn "local:katana"
 
 DEFAULT_TOOLTIP_OFFSET :: 10
 

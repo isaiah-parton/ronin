@@ -1,5 +1,6 @@
 package ronin
 
+import kn "../katana"
 import "base:intrinsics"
 import "base:runtime"
 import "core:container/small_array"
@@ -11,7 +12,6 @@ import "core:mem"
 import "core:reflect"
 import "core:strings"
 import "core:time"
-import kn "local:katana"
 import "tedit"
 
 MAX_CLICK_DELAY :: time.Millisecond * 450

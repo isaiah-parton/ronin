@@ -1,12 +1,12 @@
 package ronin
 
+import kn "../katana"
 import "base:intrinsics"
 import "base:runtime"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:reflect"
-import kn "local:katana"
 
 Container :: struct {
 	using object:    ^Object,

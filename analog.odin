@@ -1,12 +1,12 @@
 package ronin
 
+import kn "../katana"
 import "base:intrinsics"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:strconv"
 import "core:strings"
-import kn "local:katana"
 
 Slider :: struct {
 	click_value: f64,

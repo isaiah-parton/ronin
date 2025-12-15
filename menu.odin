@@ -1,12 +1,12 @@
 package ronin
 
+import kn "../katana"
 import "base:intrinsics"
 import "base:runtime"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
-import kn "local:katana"
 
 solve_menu_content_height :: proc(how_many_items, how_many_dividers: int) -> f32 {
 	style := get_current_style()

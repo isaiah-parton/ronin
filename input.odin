@@ -1,5 +1,6 @@
 package ronin
 
+import kn "../katana"
 import "base:intrinsics"
 import "base:runtime"
 import "core:bufio"
@@ -15,7 +16,6 @@ import "core:strings"
 import "core:time"
 import "core:unicode"
 import "core:unicode/utf8"
-import kn "local:katana"
 import "tedit"
 
 Input_Decal :: enum u8 {
@@ -256,8 +256,10 @@ raw_input :: proc(
 				content_text = kn.make_selectable(
 					kn.make_text_with_reader(content_reader, text_size),
 					mouse_point() - text_origin,
-					min(object.input.editor.selection.x, object.input.editor.selection.y),
-					max(object.input.editor.selection.x, object.input.editor.selection.y),
+					{
+						min(object.input.editor.selection.x, object.input.editor.selection.y),
+						max(object.input.editor.selection.x, object.input.editor.selection.y),
+					},
 				)
 			}
 
@@ -352,7 +354,7 @@ raw_input :: proc(
 			text_mouse_selection(object, strings.to_string(object.input.builder), &content_text)
 
 			if .Active in object.state.previous && len(content_text.glyphs) > 0 {
-				glyph := content_text.glyphs[content_text.selection.first_glyph]
+				glyph := content_text.glyphs[content_text.selection.glyphs[0]]
 				glyph_pos := (text_origin - object.input.offset) + glyph.offset
 				cursor_box := Box {
 					glyph_pos + {0, -2},
@@ -554,7 +556,7 @@ draw_text_layout_cursor :: proc(text: ^kn.Selectable_Text, origin: [2]f32, color
 		return
 	}
 	line_height := text.font.line_height * text.font_scale
-	cursor_origin := origin + text.glyphs[text.selection.first_glyph].offset
+	cursor_origin := origin + text.glyphs[text.selection.glyphs[0]].offset
 	kn.add_box(
 		snapped_box(
 			{
@@ -567,14 +569,14 @@ draw_text_layout_cursor :: proc(text: ^kn.Selectable_Text, origin: [2]f32, color
 }
 
 draw_text_highlight :: proc(text: ^kn.Selectable_Text, origin: [2]f32, color: kn.Color) {
-	if text.selection.first_glyph == text.selection.last_glyph {
+	if text.selection.glyphs[0] == text.selection.glyphs[1] {
 		return
 	}
 	line_height := text.font.line_height * text.font_scale
 	for &line in text.lines {
 		highlight_range := [2]int {
-			max(text.selection.first_glyph, line.first_glyph),
-			min(text.selection.last_glyph, line.last_glyph),
+			max(text.selection.glyphs[0], line.first_glyph),
+			min(text.selection.glyphs[1], line.last_glyph),
 		}
 		if highlight_range.x > highlight_range.y {
 			continue
@@ -586,7 +588,7 @@ draw_text_highlight :: proc(text: ^kn.Selectable_Text, origin: [2]f32, color: kn
 			{
 					text.font.space_advance *
 					text.font_scale *
-					f32(i32(text.selection.last_glyph > line.last_glyph)),
+					f32(i32(text.selection.glyphs[1] > line.last_glyph)),
 					line_height,
 				},
 		}

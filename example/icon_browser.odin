@@ -1,13 +1,13 @@
 package demo
 
+import ronin ".."
+import kn "../../katana"
 import "core:encoding/json"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:os"
 import "core:strings"
-import kn "local:katana"
-import "local:ronin"
 
 Icon_Section_State :: struct {
 	query:             string,
@@ -187,7 +187,7 @@ icon_section :: proc(state: ^Icon_Section_State) {
 								)
 								size := icon_size // * (1.0 + 0.2 * object.hover_time)
 								font := style.icon_font
-								if glyph, ok := kn.get_font_glyph(font, icon); ok {
+								if glyph, ok := kn.get_font_glyph(&font, icon); ok {
 									kn.add_glyph(
 										glyph,
 										size,

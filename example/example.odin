@@ -1,5 +1,7 @@
 package demo
 
+import ronin "../"
+import kn "../../katana"
 import "base:runtime"
 import "core:c/libc"
 import "core:fmt"
@@ -18,8 +20,6 @@ import "core:strings"
 import "core:sys/windows"
 import "core:thread"
 import "core:time"
-import kn "local:katana"
-import "local:ronin"
 import "vendor:glfw"
 import "vendor:wgpu"
 
@@ -102,7 +102,7 @@ analog_section :: proc(state: ^Analog_Section_State) {
 	space()
 	dial(state.float_value / 100.0)
 	space()
-	pie({33, 15, 52}, 100, {kn.Red, kn.Green, kn.Blue})
+	pie({33, 15, 52}, 100, {kn.RED, kn.GREEN, kn.BLUE})
 }
 
 Button_Section_State :: struct {
@@ -483,7 +483,7 @@ main :: proc() {
 	panels: [5]ronin.Layer_Sort_Method
 
 	rand.reset(rand.uint64())
-	state.graph_section.color = kn.Green
+	state.graph_section.color = kn.GREEN
 	state.graph_section.time_range = {0, 20}
 	randomize_graphs(&state.graph_section)
 

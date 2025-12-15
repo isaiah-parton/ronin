@@ -1,12 +1,12 @@
 package ronin
 
+import kn "../katana"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
 import "core:strconv"
 import "core:strings"
-import kn "local:katana"
 
 barycentric :: proc(point, a, b, c: [2]f32) -> (u, v: f32) {
 	d := c - a
@@ -132,13 +132,13 @@ color_picker :: proc(
 
 		if object_is_visible(object) {
 			accent_color :=
-				kn.Black if max(kn.luminance_of(value^), 1 - f32(value.a) / 255) > 0.45 else kn.White
+				kn.BLACK if max(kn.luminance_of(value^), 1 - f32(value.a) / 255) > 0.45 else kn.WHITE
 			kn.push_scissor(kn.make_box(object.box, get_current_options().radius))
 			draw_checkerboard_pattern(
 				object.box,
 				box_height(object.box) / 2,
-				kn.blend(get_current_style().color.checkers0, value^, kn.White),
-				kn.blend(get_current_style().color.checkers1, value^, kn.White),
+				kn.blend(get_current_style().color.checkers0, value^, kn.WHITE),
+				kn.blend(get_current_style().color.checkers1, value^, kn.WHITE),
 			)
 			if show_hex {
 				kn.add_text(
@@ -153,7 +153,7 @@ color_picker :: proc(
 		PADDING :: 10
 		if .Open in object.state.current {
 			if .Open not_in object.state.previous {
-				extras.hsva = kn.hsva_from_color(value^)
+				extras.hsva = kn.hsva_from_rgba(kn.rgba_from_color(value^))
 			}
 
 			push_id(object.id)
@@ -185,7 +185,7 @@ color_picker :: proc(
 				}
 
 				if object_was_just_changed(object) {
-					value^ = kn.color_from_hsva(extras.hsva)
+					value^ = kn.color_from_rgba(kn.rgba_from_hsva(extras.hsva))
 					object.state.current += {.Changed}
 				}
 
@@ -200,7 +200,7 @@ color_picker :: proc(
 
 alpha_slider :: proc(
 	value: ^f32,
-	color: kn.Color = kn.Black,
+	color: kn.Color = kn.BLACK,
 	axis: int = 1,
 	loc := #caller_location,
 ) {
@@ -333,7 +333,11 @@ hsv_wheel :: proc(value: ^[3]f32, loc := #caller_location) {
 				{point_a, point_b, point_c},
 				paint = kn.make_tri_gradient(
 					{point_a, point_b, point_c},
-					{kn.color_from_hsva({value.x, 1, 1, 1}), kn.Black, kn.White},
+					{
+						kn.color_from_rgba(kn.rgba_from_hsva({value.x, 1, 1, 1})),
+						kn.BLACK,
+						kn.WHITE,
+					},
 				),
 			)
 
@@ -344,8 +348,12 @@ hsv_wheel :: proc(value: ^[3]f32, loc := #caller_location) {
 			)
 			r: f32 =
 				9 if (object.state.current >= {.Pressed} && .Active not_in object.state.current) else 7
-			kn.add_circle(point, r + 1, paint = kn.Black if value.z > 0.5 else kn.White)
-			kn.add_circle(point, r, paint = kn.color_from_hsva({value.x, value.y, value.z, 1}))
+			kn.add_circle(point, r + 1, paint = kn.BLACK if value.z > 0.5 else kn.WHITE)
+			kn.add_circle(
+				point,
+				r,
+				paint = kn.color_from_rgba(kn.rgba_from_hsva({value.x, value.y, value.z, 1})),
+			)
 		}
 	}
 	return

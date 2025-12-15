@@ -1,5 +1,6 @@
 package ronin
 
+import kn "../katana"
 import "base:runtime"
 import "core:fmt"
 import "core:math/linalg"
@@ -7,7 +8,6 @@ import "core:reflect"
 import "core:slice"
 import "core:strings"
 import "core:time"
-import kn "local:katana"
 
 DEBUG :: #config(ONYX_DEBUG, ODIN_DEBUG)
 
@@ -98,7 +98,7 @@ profiler_end_scope :: proc(scope: Profiler_Scope) {
 
 @(private)
 draw_object_debug_margin :: proc(box: Box, margin: [4]f32) {
-	kn.set_paint(kn.fade(kn.Yellow, 0.5))
+	kn.set_paint(kn.fade(kn.YELLOW, 0.5))
 	if margin.x > 0 do kn.add_box(attach_box_left(box, margin.x))
 	if margin.y > 0 do kn.add_box(attach_box_top(box, margin.y))
 	if margin.z > 0 do kn.add_box(attach_box_right(box, margin.z))
@@ -108,7 +108,7 @@ draw_object_debug_margin :: proc(box: Box, margin: [4]f32) {
 @(private)
 draw_object_debug_padding :: proc(box: Box, padding: [4]f32) {
 	box := box
-	kn.set_paint(kn.fade(kn.Turquoise, 0.5))
+	kn.set_paint(kn.fade(kn.TURQUOISE, 0.5))
 	if padding.x > 0 do kn.add_box(cut_box_left(&box, padding.x))
 	if padding.y > 0 do kn.add_box(cut_box_top(&box, padding.y))
 	if padding.z > 0 do kn.add_box(cut_box_right(&box, padding.z))
@@ -118,9 +118,9 @@ draw_object_debug_padding :: proc(box: Box, padding: [4]f32) {
 @(private)
 draw_object_debug_box :: proc(state: Debug_State, object: ^Object) {
 	if object_is_being_debugged(state, object) {
-		kn.add_box(object.box, paint = kn.fade(kn.Blue, 0.25))
+		kn.add_box(object.box, paint = kn.fade(kn.BLUE, 0.25))
 	}
-	kn.add_box_lines(object.box, 1, paint = kn.Blue)
+	kn.add_box_lines(object.box, 1, paint = kn.BLUE)
 }
 
 @(private)
@@ -168,7 +168,7 @@ draw_debug_stuff :: proc(state: ^Debug_State) {
 
 	if ctx.hovered_object != 0 {
 		if object, ok := ctx.object_map[ctx.hovered_object]; ok {
-			kn.add_box_lines(object.box, 1, paint = kn.White)
+			kn.add_box_lines(object.box, 1, paint = kn.WHITE)
 		}
 	}
 
@@ -180,7 +180,7 @@ draw_debug_stuff :: proc(state: ^Debug_State) {
 	}
 
 	DEBUG_TEXT_SIZE :: 14
-	kn.set_paint(kn.White)
+	kn.set_paint(kn.WHITE)
 	kn.set_font(ctx.style.monospace_font)
 
 	{
@@ -210,7 +210,7 @@ draw_debug_stuff :: proc(state: ^Debug_State) {
 		fmt.sbprintf(&b, "\nObjects: %i", len(ctx.objects))
 		fmt.sbprintf(&b, "\nLayers: %i", len(ctx.layer_array))
 		fmt.sbprintf(&b, "\nPanels: %i", len(ctx.panel_map))
-		kn.add_string(strings.to_string(b), DEBUG_TEXT_SIZE, 1, paint = kn.Black)
+		kn.add_string(strings.to_string(b), DEBUG_TEXT_SIZE, 1, paint = kn.BLACK)
 		kn.add_string(strings.to_string(b), DEBUG_TEXT_SIZE, 0)
 	}
 
@@ -255,10 +255,10 @@ draw_debug_stuff :: proc(state: ^Debug_State) {
 		size := info_text_layout.size + {0, header_text_layout.size.y}
 		origin := linalg.clamp(mouse_point() + 10, 0, ctx.view - size)
 
-		kn.add_box({origin, origin + size}, paint = kn.fade(kn.Black, 0.75))
-		kn.add_box({origin, origin + header_text_layout.size}, paint = kn.Blue)
-		kn.add_text(header_text_layout, origin, paint = kn.Black)
-		kn.add_text(info_text_layout, origin + {0, header_text_layout.size.y}, paint = kn.White)
+		kn.add_box({origin, origin + size}, paint = kn.fade(kn.BLACK, 0.75))
+		kn.add_box({origin, origin + header_text_layout.size}, paint = kn.BLUE)
+		kn.add_text(header_text_layout, origin, paint = kn.BLACK)
+		kn.add_text(info_text_layout, origin + {0, header_text_layout.size.y}, paint = kn.WHITE)
 	}
 }
 

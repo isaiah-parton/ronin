@@ -1,4 +1,7 @@
+# This library is no longer actively maintained
+
 # Ronin
+
 My immediate-mode UI library for writing desktop apps in Odin.
 
 ## Major WIP

@@ -1,6 +1,6 @@
 package ronin
 
-import kn "local:katana"
+import kn "../katana"
 import "base:intrinsics"
 import "core:math"
 import "core:math/linalg"
@@ -184,10 +184,7 @@ squish_box :: proc(box: Box, side: Side, amount: f32) -> (result: Box) {
 
 align_box_inside :: proc(bounds: Box, size, align: [2]f32) -> Box {
 	origin := bounds.lo + (bounds.hi - bounds.lo - size) * align
-	return Box{
-		origin,
-		origin + size,
-	}
+	return Box{origin, origin + size}
 }
 
 shrink_box :: proc(a: Box, amount: [2]f32) -> Box {
@@ -356,3 +353,4 @@ grow_side_of_box :: proc(box: Box, side: Side, size: [2]f32) -> Box {
 	}
 	return box
 }
+

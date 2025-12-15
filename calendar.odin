@@ -1,6 +1,6 @@
 package ronin
 
-import kn "local:katana"
+import kn "../katana"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
@@ -151,8 +151,16 @@ calendar :: proc(from: ^Maybe(Date), to: ^Maybe(Date) = nil, loc := #caller_loca
 		space()
 
 		calendar_box := get_current_layout().box
-		row := clamp(int((mouse_point().y - calendar_box.lo.y) / (row_height + CALENDAR_WEEK_SPACING)), 0, how_many_weeks - 1)
-		column := clamp(int((mouse_point().x - calendar_box.lo.x) / (remaining_space().x / 7)), 0, 6)
+		row := clamp(
+			int((mouse_point().y - calendar_box.lo.y) / (row_height + CALENDAR_WEEK_SPACING)),
+			0,
+			how_many_weeks - 1,
+		)
+		column := clamp(
+			int((mouse_point().x - calendar_box.lo.x) / (remaining_space().x / 7)),
+			0,
+			6,
+		)
 
 		if point_in_box(mouse_point(), calendar_box) {
 			hover_object(object)
@@ -213,17 +221,16 @@ calendar :: proc(from: ^Maybe(Date), to: ^Maybe(Date) = nil, loc := #caller_loca
 						get_current_style().rounding,
 						paint = kn.fade(
 							get_current_style().color.button,
-							0.5 * f32(i32(selected_ordinal == ordinal) & i32(.Hovered in object.state.current)),
+							0.5 *
+							f32(
+								i32(selected_ordinal == ordinal) &
+								i32(.Hovered in object.state.current),
+							),
 						),
 					)
 				}
 				if ordinal == today_ordinal {
-					kn.add_box_lines(
-						box,
-						1,
-						get_current_style().rounding,
-						paint = stroke_color,
-					)
+					kn.add_box_lines(box, 1, get_current_style().rounding, paint = stroke_color)
 				}
 				kn.set_font(get_current_style().default_font)
 				kn.add_string(
@@ -250,7 +257,8 @@ calendar :: proc(from: ^Maybe(Date), to: ^Maybe(Date) = nil, loc := #caller_loca
 			from^ = date
 		}
 		if to != nil {
-			if date, err := dt.ordinal_to_date(max(extras.range[0], extras.range[1])); err == .None {
+			if date, err := dt.ordinal_to_date(max(extras.range[0], extras.range[1]));
+			   err == .None {
 				to^ = date
 			}
 		}
@@ -301,3 +309,4 @@ parse_date :: proc(s: string) -> (date: Date, ok: bool) {
 	ok = true
 	return
 }
+

@@ -1,5 +1,6 @@
 package ronin
 
+import kn "../katana"
 import "base:intrinsics"
 import "core:container/small_array"
 import "core:fmt"
@@ -7,7 +8,6 @@ import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
 import "core:time"
-import kn "local:katana"
 
 Wave_Effects :: small_array.Small_Array(4, Wave_Effect)
 
@@ -20,7 +20,7 @@ draw_and_update_wave_effects :: proc(object: ^Object, array: ^Wave_Effects) {
 		kn.add_circle(
 			wave.point,
 			linalg.length(object.box.hi - object.box.lo) * min(wave.time, 0.75) * 1.33,
-			paint = kn.fade(kn.White, (1 - max(0, wave.time - 0.75) * 4) * 0.2),
+			paint = kn.fade(kn.WHITE, (1 - max(0, wave.time - 0.75) * 4) * 0.2),
 		)
 
 		if !(wave.time >= 0.75 && .Pressed in object.state.current && i == array.len - 1) {
@@ -127,7 +127,7 @@ button :: proc(
 				base_color := kn.mix(
 					0.15 * (object.animation.hover + object.animation.press),
 					style.color.accent,
-					kn.White,
+					kn.WHITE,
 				)
 				stroke_color := base_color
 				fill_color := kn.mix(

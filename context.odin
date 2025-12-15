@@ -1,5 +1,6 @@
 package ronin
 
+import kn "../katana"
 import "base:runtime"
 import "core:container/small_array"
 import "core:fmt"
@@ -13,7 +14,6 @@ import "core:slice"
 import "core:strings"
 import "core:sys/windows"
 import "core:time"
-import kn "local:katana"
 import "tedit"
 import "vendor:fontstash"
 import "vendor:glfw"

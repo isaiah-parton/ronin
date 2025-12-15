@@ -1,11 +1,11 @@
 package ronin
 
+import kn "../katana"
 import "core:fmt"
 import "core:math"
 import "core:math/ease"
 import "core:math/linalg"
 import "core:reflect"
-import kn "local:katana"
 
 Carousel :: struct {
 	offset:      [2]f32,
