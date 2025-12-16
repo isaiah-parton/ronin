@@ -1,4 +1,6 @@
-# This library is no longer actively maintained
+# This library is no longer being developed
+
+I have stopped work on this project in favor of [Opal](https://github.com/isaiah-parton/opal) which is much more complete and capable.
 
 # Ronin
 
